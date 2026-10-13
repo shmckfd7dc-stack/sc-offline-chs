@@ -6,6 +6,7 @@
 #include "menu.h"
 #include "menu_imgui.h"
 #include "menu_ui.h"
+#include "chinese_font.h"
 #include "common.h"
 #include "version.h"
 #include <atomic>
@@ -240,19 +241,24 @@ static void ApplyTheme() {
     c[ImGuiCol_NavCursor]            = kLeaf;
 }
 
-// Bahnschrift (DIN-style, ships with Windows 10+), then Segoe UI, then ImGui's own font.
+// Prefer the bundled CJK font, with Windows Chinese fonts as a fallback.
 static void LoadFonts() {
     ImGuiIO& io = ImGui::GetIO();
-    char dir[MAX_PATH] = "C:\\Windows";
-    GetWindowsDirectoryA(dir, sizeof(dir));
-    static const char* const kFonts[] = { "bahnschrift.ttf", "segoeui.ttf" };
-    ImFont* font = nullptr;
-    for (const char* name : kFonts) {
-        char path[MAX_PATH];
-        snprintf(path, sizeof(path), "%s\\Fonts\\%s", dir, name);
-        if (GetFileAttributesA(path) == INVALID_FILE_ATTRIBUTES) continue;
-        if ((font = io.Fonts->AddFontFromFileTTF(path, kBodySize)) != nullptr) break;
+    wchar_t path[32768] = L"";
+    const DWORD len = GetEnvironmentVariableW(L"SC_OFFLINE_SHIPS_FILE", path, 32768);
+    if (len > 0 && len < 32768) {
+        wchar_t* back = wcsrchr(path, L'\\');
+        wchar_t* fwd = wcsrchr(path, L'/');
+        wchar_t* slash = back;
+        if (!slash || (fwd && fwd > slash)) slash = fwd;
+        if (slash && 32768 - static_cast<size_t>(slash + 1 - path) > wcslen(L"fonts\\NotoSansSC-Regular.ttf"))
+            wcscpy_s(slash + 1, 32768 - static_cast<size_t>(slash + 1 - path), L"fonts\\NotoSansSC-Regular.ttf");
+        else path[0] = 0;
+    } else {
+        path[0] = 0;
     }
+    ImFont* font = sc_offline_chs::LoadChineseFont(path, kBodySize);
+    if (font) io.FontDefault = font;
     ImGuiStyle& st = ImGui::GetStyle();
     st.FontSizeBase = font ? kBodySize : 13.0f;
     st.FontScaleMain = font ? 1.0f : 1.3f;
@@ -404,27 +410,27 @@ void PrettyBuildName(char* out, size_t n, const char* name) {
 // =============================================================================================
 
 static void DrawMenuTab() {
-    SectionHeading("Background");
+    SectionHeading("背景");
     if (g_bgSrv) {
-        ImGui::Checkbox("Show background image", &g_bgShow);
+        ImGui::Checkbox("显示背景图片", &g_bgShow);
         ImGui::BeginDisabled(!g_bgShow);
         ImGui::SetNextItemWidth(-1);
-        ImGui::SliderInt("##dark", &g_bgDarkness, 20, 95, "Darkness %d%%");
+        ImGui::SliderInt("##dark", &g_bgDarkness, 20, 95, "暗度 %d%%");
         if (static_cast<float>(g_bgW) / g_bgH > 0.7f) {
             ImGui::SetNextItemWidth(-1);
-            ImGui::SliderFloat("##pos", &g_bgPosition, 0.0f, 1.0f, "Image position");
-            ImGui::SetItemTooltip("The menu is taller than the picture is wide. Slide to choose which part shows.");
+            ImGui::SliderFloat("##pos", &g_bgPosition, 0.0f, 1.0f, "图片位置");
+            ImGui::SetItemTooltip("拖动滑块，选择背景图片的显示区域。");
         }
         ImGui::EndDisabled();
         Hint(g_bgPath);
     } else {
-        Hint("To use a background image, save it as menu_background.png (or .jpg) here, then restart the game:");
+        Hint("将背景图片命名为 menu_background.png（或 .jpg），保存到下方路径，然后重启游戏：");
         ImGui::TextWrapped("%s", g_bgPath[0] ? g_bgPath : "data\\menu_background.png");
     }
 
-    SectionHeading("About");
-    Hint(SCO_TITLE " is a work in progress, " SCO_BASED_ON ".");
-    Hint("Bug reports: github.com/scubamount/sc-offline/issues");
+    SectionHeading("关于");
+    Hint(SCO_TITLE " 仍在开发中，基于 ChrisWareOffline 0.9.0-rc1。");
+    Hint("问题反馈：github.com/scubamount/sc-offline/issues");
 }
 
 // =============================================================================================
@@ -502,7 +508,7 @@ static bool DrawMenu() {
             first = false;
             if (ImGui::BeginTabItem(label.c_str(), nullptr, flags)) { body([&] { DrawPluginTab(t, frame); }); ImGui::EndTabItem(); }
         }
-        if (ImGui::BeginTabItem("Menu", nullptr, first ? ImGuiTabItemFlags_SetSelected : 0)) { body([&] { DrawMenuTab(); }); ImGui::EndTabItem(); }
+        if (ImGui::BeginTabItem("菜单", nullptr, first ? ImGuiTabItemFlags_SetSelected : 0)) { body([&] { DrawMenuTab(); }); ImGui::EndTabItem(); }
         ImGui::EndTabBar();
     }
     DrawStatusStrip(statusHeight);

@@ -72,7 +72,7 @@ constexpr size_t   kMaxRemotePeers = SCO_NET_MAX_PEERS - 1;
 MpSettings g_set;
 std::vector<sco::net::Cidr> g_allow;
 std::string g_allowText;
-char g_stateText[96] = "Not in a session";
+char g_stateText[96] = "尚未加入房间";
 char g_reason[160] = "";
 
 // ---- settings -----------------------------------------------------------------------------------
@@ -160,7 +160,7 @@ Peer* FindOrAddPeer(uint64_t id) {
     g_peers.emplace_back();
     Peer& p = g_peers.back();
     p.peer = id;
-    if (g_net->get_peer_name(id, p.name, sizeof(p.name)) != SCO_OK) snprintf(p.name, sizeof(p.name), "player %llu", static_cast<unsigned long long>(id));
+    if (g_net->get_peer_name(id, p.name, sizeof(p.name)) != SCO_OK) snprintf(p.name, sizeof(p.name), "玩家 %llu", static_cast<unsigned long long>(id));
     return &p;
 }
 
@@ -302,9 +302,9 @@ void UpdateGhost(Peer& p, bool ship, const LocalChain& c, uint64_t now) {
     if (ship) wanted = aboard && g_set.showShips && p.shipCls[0];
     else wanted = p.s1.valid && !p.avatarGone && !(aboard && p.ship.st == GhostState::Alive);
     if (!wanted) {
-        if (g.id) RemoveGhost(p, g, ship, ship ? "no ship" : "aboard their ship");
+        if (g.id) RemoveGhost(p, g, ship, ship ? "没有飞船" : "在对方飞船上");
         g.st = GhostState::None;
-        Note(g, ship ? "" : (aboard ? "aboard their ship" : (p.avatarGone ? "gone" : "waiting for a position")));
+        Note(g, ship ? "" : (aboard ? "在对方飞船上" : (p.avatarGone ? "已离开" : "正在等待位置数据")));
         return;
     }
     const char* cls = ship ? p.shipCls : AvatarClassFor(p);
@@ -314,7 +314,7 @@ void UpdateGhost(Peer& p, bool ship, const LocalChain& c, uint64_t now) {
     const bool placed = GhostPose(p, ship, c, now, &zone, pos, rot);
     const double distance = placed ? DistanceFromYou(c, zone, pos) : 0;
     char farNote[96];
-    snprintf(farNote, sizeof(farNote), "not shown: %.0f km away", distance / 1000.0);
+    snprintf(farNote, sizeof(farNote), "未显示：距离 %.0f 千米", distance / 1000.0);
     switch (g.st) {
         case GhostState::Failed:
             if (now - g.since < kRetryMs) return;
@@ -323,7 +323,7 @@ void UpdateGhost(Peer& p, bool ship, const LocalChain& c, uint64_t now) {
         case GhostState::Waiting: {
             if (!placed) {
                 g.st = GhostState::Waiting;
-                Note(g, "not shown: they're in a zone you haven't loaded (%s)", WhereText(p));
+                Note(g, "未显示：对方位于你尚未加载的区域（%s）", WhereText(p));
                 return;
             }
             if (distance > kShowWithinM) {
@@ -334,7 +334,7 @@ void UpdateGhost(Peer& p, bool ship, const LocalChain& c, uint64_t now) {
             if (!g_spawn->class_exists(cls)) {
                 g.st = GhostState::Failed;
                 g.since = now;
-                Note(g, "'%s' isn't a spawnable class on this game build", cls);
+                Note(g, "此游戏版本无法生成“%s”类型", cls);
                 return;
             }
             const double offset[3] = { 0, 0, ship ? 100.0 : 2.0 };
@@ -343,14 +343,14 @@ void UpdateGhost(Peer& p, bool ship, const LocalChain& c, uint64_t now) {
             if (err) {
                 g.st = GhostState::Failed;
                 g.since = now;
-                Note(g, "couldn't spawn: %s", err);
+                Note(g, "无法生成：%s", err);
                 return;
             }
             g.id = id;
             strcpy_s(g.cls, cls);
             g.st = GhostState::Streaming;
             g.since = now;
-            Note(g, "streaming in");
+            Note(g, "正在加载");
             Log("[multiplayer] spawned %s's %s ghost %llu (%s)", p.name, ship ? "ship" : "avatar",
                 static_cast<unsigned long long>(id), cls);
             return;
@@ -361,7 +361,7 @@ void UpdateGhost(Peer& p, bool ship, const LocalChain& c, uint64_t now) {
                     RemoveGhost(p, g, ship, "didn't stream in");
                     g.st = GhostState::Failed;
                     g.since = now;
-                    Note(g, "didn't stream in within 60 s; trying again later");
+                    Note(g, "60 秒内未能加载，稍后重试");
                 }
                 return;
             }
@@ -375,7 +375,7 @@ void UpdateGhost(Peer& p, bool ship, const LocalChain& c, uint64_t now) {
                 g.st = GhostState::Failed;          // waits kRetryMs before spawning again
                 g.since = now;
                 if (!ship) sco::net::SetPeerEntity(p.peer, 0);
-                Note(g, "streamed out; shown again within 30 s when they're near");
+                Note(g, "已卸载；对方靠近后将在 30 秒内重新显示");
                 return;
             }
             if (distance > kShowWithinM) {
@@ -387,14 +387,14 @@ void UpdateGhost(Peer& p, bool ship, const LocalChain& c, uint64_t now) {
             if (placed) {
                 if (g_spawn->set_entity_transform(g_self, g.id, zone, pos, rot)) {
                     g.st = GhostState::Alive;
-                    Note(g, "shown");
+                    Note(g, "已显示");
                 } else {
-                    Note(g, "the game refused the move (mod.log says why)");
+                    Note(g, "游戏拒绝移动（原因见 mod.log）");
                 }
             } else {
                 if (g.st != GhostState::Parked) Park(g);
                 g.st = GhostState::Parked;
-                Note(g, "parked: they're in a zone you haven't loaded (%s)", WhereText(p));
+                Note(g, "已停留：对方位于你尚未加载的区域（%s）", WhereText(p));
             }
             return;
     }
@@ -572,7 +572,7 @@ void OnNetPeer(const char*, const void* data, void*) {
         for (size_t i = 0; i < g_peers.size(); ++i)
             if (g_peers[i].peer == id) {
                 Log("[multiplayer] %s left", g_peers[i].name);
-                RemovePeerGhosts(g_peers[i], "left the session");
+                RemovePeerGhosts(g_peers[i], "已离开房间");
                 g_peers.erase(g_peers.begin() + static_cast<std::ptrdiff_t>(i));
                 break;
             }
@@ -583,13 +583,13 @@ void OnNetPeer(const char*, const void* data, void*) {
 
 void UpdateStateText() {
     switch (sco::net::GetState()) {
-        case sco::net::State::Idle: strcpy_s(g_stateText, "Not in a session"); break;
-        case sco::net::State::Joining: strcpy_s(g_stateText, "Joining..."); break;
+        case sco::net::State::Idle: strcpy_s(g_stateText, "尚未加入房间"); break;
+        case sco::net::State::Joining: strcpy_s(g_stateText, "正在加入……"); break;
         case sco::net::State::Joined:
-            snprintf(g_stateText, sizeof(g_stateText), "Joined as player %llu", static_cast<unsigned long long>(g_net->self_peer()));
+            snprintf(g_stateText, sizeof(g_stateText), "已加入，你的玩家编号为 %llu", static_cast<unsigned long long>(g_net->self_peer()));
             break;
         case sco::net::State::Hosting:
-            snprintf(g_stateText, sizeof(g_stateText), "Hosting on UDP port %u", static_cast<unsigned>(sco::net::BoundPort()));
+            snprintf(g_stateText, sizeof(g_stateText), "正在 UDP 端口 %u 主持房间", static_cast<unsigned>(sco::net::BoundPort()));
             break;
     }
 }
@@ -609,9 +609,9 @@ void OnTick(const char*, const void*, void*) {
     ReadLocalChain(c);
     for (Peer& p : g_peers) {
         if (p.s1.valid && now - p.s1.at > kPoseTimeoutMs) {
-            RemovePeerGhosts(p, "no position for 10 s");
+            RemovePeerGhosts(p, "已 10 秒未收到位置数据");
             p.s0.valid = p.s1.valid = false;
-            Note(p.avatar, "no position for 10 s");
+            Note(p.avatar, "已 10 秒未收到位置数据");
             continue;
         }
         UpdateGhost(p, true, c, now);    // the ship first: the avatar hides while its ship is shown
@@ -622,18 +622,18 @@ void OnTick(const char*, const void*, void*) {
 // ---- commands -----------------------------------------------------------------------------------
 
 sco_result CmdStatus(const sco_arg*, uint32_t, void*, char* reply, uint32_t size) {
-    snprintf(reply, size, "%s; %u other player(s)%s%s", g_stateText, static_cast<unsigned>(g_peers.size()),
-             g_reason[0] ? "; last ended: " : "", g_reason);
+    snprintf(reply, size, "%s；其他玩家 %u 人%s%s", g_stateText, static_cast<unsigned>(g_peers.size()),
+             g_reason[0] ? "；上次结束原因：" : "", g_reason);
     return SCO_OK;
 }
 
 sco_result CmdLeave(const sco_arg*, uint32_t, void*, char* reply, uint32_t size) {
     if (!g_net->is_active() && sco::net::GetState() == sco::net::State::Idle) {
-        snprintf(reply, size, "Not in a session");   // ran, nothing to leave: the sco.net gate answers SCO_UNAVAILABLE without it
+        snprintf(reply, size, "尚未加入房间");   // ran, nothing to leave: the sco.net gate answers SCO_UNAVAILABLE without it
         return SCO_FAILED;
     }
     Mp_Leave();
-    snprintf(reply, size, "Left the session");
+    snprintf(reply, size, "已离开房间");
     return SCO_OK;
 }
 
@@ -642,10 +642,10 @@ sco_result CmdGoTo(const sco_arg* args, uint32_t, void*, char* reply, uint32_t s
     for (const Peer& p : g_peers)
         if (who && _stricmp(p.name, who) == 0) {
             const char* err = Mp_GoTo(p.peer);
-            snprintf(reply, size, err ? "%s" : "Teleported next to %s", err ? err : p.name);
+            snprintf(reply, size, err ? "%s" : "已传送至 %s 身旁", err ? err : p.name);
             return err ? SCO_FAILED : SCO_OK;
         }
-    snprintf(reply, size, "No player named '%s' in the session", who ? who : "");
+    snprintf(reply, size, "房间中没有名为“%s”的玩家", who ? who : "");
     return SCO_FAILED;
 }
 
@@ -732,7 +732,7 @@ sco_result MpLoad(const sco_api* api, sco_plugin* self) {
         g_self = nullptr;
         return r;
     }
-    RegisterBuiltinTab(api, self, "multiplayer.session", "Multiplayer", kTabMultiplayer, DrawMultiplayerTab);
+    RegisterBuiltinTab(api, self, "multiplayer.session", "联机", kTabMultiplayer, DrawMultiplayerTab);
     return SCO_OK;
 }
 
@@ -785,13 +785,13 @@ const char* Mp_AllowText() { return g_allowText.c_str(); }
 
 // The settings both Host and Join need; nullptr when they're fine.
 static const char* CheckCommon() {
-    if (!g_net) return "multiplayer is off";
-    if (sco::net::GetState() != sco::net::State::Idle) return "already in a session; leave it first";
+    if (!g_net) return "联机功能已关闭";
+    if (sco::net::GetState() != sco::net::State::Idle) return "已在房间中，请先离开";
     const size_t name = strlen(g_set.name);
-    if (name < 1 || name > SCO_NET_MAX_NAME) return "pick a name (1 to 64 characters)";
+    if (name < 1 || name > SCO_NET_MAX_NAME) return "请设置昵称（1 到 64 个字符）";
     for (const char* c = g_set.name; *c; ++c)
-        if (static_cast<unsigned char>(*c) < 0x20) return "the name can't hold control characters";
-    if (strlen(g_set.passphrase) < 8) return "pick a passphrase of at least 8 characters";
+        if (static_cast<unsigned char>(*c) < 0x20) return "昵称不能包含控制字符";
+    if (strlen(g_set.passphrase) < 8) return "请设置至少 8 个字符的口令";
     return nullptr;
 }
 
@@ -804,15 +804,15 @@ static sco::net::Scope MakeScope() {
 static const char* ResultText(sco::Result r) {
     switch (r) {
         case sco::Result::Ok: return nullptr;
-        case sco::Result::Failed: return "couldn't open the UDP port (in use? mod.log says why)";
-        case sco::Result::BadArg: return "refused: check the address (LAN or multiplayer_allow only), name and passphrase";
-        default: return "sco.net isn't running";
+        case sco::Result::Failed: return "无法打开 UDP 端口（可能被占用，原因见 mod.log）";
+        case sco::Result::BadArg: return "连接被拒绝：请检查地址（仅限局域网或 multiplayer_allow）、昵称和口令";
+        default: return "sco.net 未运行";
     }
 }
 
 const char* Mp_Host() {
     if (const char* err = CheckCommon()) return err;
-    if (g_set.hostPort < 1024 || g_set.hostPort > 65535) return "the port must be 1024 to 65535";
+    if (g_set.hostPort < 1024 || g_set.hostPort > 65535) return "端口必须为 1024 到 65535";
     sco::net::HostOptions h;
     h.port = static_cast<uint16_t>(g_set.hostPort);
     h.passphrase = g_set.passphrase;
@@ -826,11 +826,11 @@ const char* Mp_Host() {
 
 const char* Mp_Join() {
     if (const char* err = CheckCommon()) return err;
-    if (g_set.joinPort < 1024 || g_set.joinPort > 65535) return "the port must be 1024 to 65535";
+    if (g_set.joinPort < 1024 || g_set.joinPort > 65535) return "端口必须为 1024 到 65535";
     sco::net::Endpoint ep;
     if (!sco::net::ParseAddress(g_set.joinAddress, static_cast<uint16_t>(g_set.joinPort), &ep))
-        return "enter the host's IPv4 address, like 192.168.1.20";
-    if (!sco::net::InScope(MakeScope(), ep)) return "that address isn't on your LAN or in multiplayer_allow";
+        return "请输入房主的 IPv4 地址，例如 192.168.1.20";
+    if (!sco::net::InScope(MakeScope(), ep)) return "该地址不属于局域网或 multiplayer_allow 允许的范围";
     sco::net::JoinOptions j;
     j.address = g_set.joinAddress;
     j.port = static_cast<uint16_t>(g_set.joinPort);
@@ -850,12 +850,12 @@ void Mp_Leave() {
         if (g_announcedShip[0]) SendDespawn(kShip);
     }
     sco::net::Leave("left from the Multiplayer tab");
-    RemoveAll("left the session");
+    RemoveAll("已离开房间");
 }
 
 int Mp_PeerCount() { return g_net && g_net->is_active() ? static_cast<int>(g_peers.size()) + 1 : 0; }
 
-static const char* GhostText(const Ghost& g) { return g.note[0] ? g.note : "waiting for a position"; }
+static const char* GhostText(const Ghost& g) { return g.note[0] ? g.note : "正在等待位置数据"; }
 
 bool Mp_Peer(int index, MpPeerView& out) {
     if (index < 0 || index >= Mp_PeerCount()) return false;
@@ -883,9 +883,9 @@ bool Mp_Peer(int index, MpPeerView& out) {
 
 const char* Mp_GoTo(uint64_t peer) {
     const Peer* p = FindPeer(peer);
-    if (!p) return "no such player";
+    if (!p) return "没有该玩家";
     const Ghost& g = p->ship.st == GhostState::Alive ? p->ship : p->avatar;
-    if (!g.id || g.st != GhostState::Alive) return "their ghost isn't shown here (see the list)";
+    if (!g.id || g.st != GhostState::Alive) return "此处未显示该玩家的映像（见列表）";
     return TeleportToEntity(g.id, g.id == p->ship.id ? 20.0 : 1.0);
 }
 

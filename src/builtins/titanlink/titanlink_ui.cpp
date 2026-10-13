@@ -11,33 +11,33 @@ void DrawTitanLinkTab(void*, void*) {
     static char reply[200] = "";
     const TlStatus& s = TlGetStatus();
     SectionHeading("Titanfall 2");
-    if (!s.linkOpen)        ImGui::TextUnformatted("Link: closed");
-    else if (!s.linked)     ImGui::TextUnformatted(s.launched ? "Link: open, waiting for Titanfall 2 to start" : "Link: open, waiting for Titanfall 2");
-    else if (!s.inMatch)    ImGui::Text("Link: Titanfall 2 linked (%u ms), loading its match", s.peerAgeMs);
-    else                    ImGui::Text("Link: Titanfall 2 in a match (%u ms)", s.peerAgeMs);
-    if (s.frameStatus[0]) ImGui::Text("Picture: %s", s.frameStatus);
-    if (s.peerLog[0]) ImGui::Text("Titanfall says: %s", s.peerLog);
-    if (s.game[0]) ImGui::Text("Game folder: %s (%s on %s)", s.game, s.mode, s.map);
+    if (!s.linkOpen)        ImGui::TextUnformatted("连接：已关闭");
+    else if (!s.linked)     ImGui::TextUnformatted(s.launched ? "连接：已开启，等待《泰坦陨落 2》启动" : "连接：已开启，等待《泰坦陨落 2》");
+    else if (!s.inMatch)    ImGui::Text("连接：已连接《泰坦陨落 2》（%u 毫秒），正在加载对局", s.peerAgeMs);
+    else                    ImGui::Text("连接：《泰坦陨落 2》对局中（%u 毫秒）", s.peerAgeMs);
+    if (s.frameStatus[0]) ImGui::Text("画面：%s", s.frameStatus);
+    if (s.peerLog[0]) ImGui::Text("泰坦陨落消息：%s", s.peerLog);
+    if (s.game[0]) ImGui::Text("游戏目录：%s（%s，%s）", s.game, s.mode, s.map);
 
-    SectionHeading("Pilot mode");
-    if (PrimaryButton(s.pilot ? "Stop pilot mode (F9)" : s.wantPilot ? "Cancel (F9)" : "Start pilot mode (F9)")) {
+    SectionHeading("铁驭模式");
+    if (PrimaryButton(s.pilot ? "停止铁驭模式 (F9)" : s.wantPilot ? "取消 (F9)" : "启动铁驭模式 (F9)")) {
         TlTogglePilot(reply, sizeof(reply));
         if (!s.pilot && s.wantPilot) MenuClose();
     }
     const float half = Columns(2);
-    if (ImGui::Button("Call Titan (V)", ImVec2(half, 0))) TlCallTitan(reply, sizeof(reply));
+    if (ImGui::Button("呼叫泰坦 (V)", ImVec2(half, 0))) TlCallTitan(reply, sizeof(reply));
     ImGui::SameLine();
-    if (ImGui::Button(s.inTitan ? "Disembark (E)" : "Embark (E)", ImVec2(half, 0))) TlEmbark(reply, sizeof(reply));
-    if (ImGui::Button("Close link", ImVec2(-1, 0))) TlUnlink(reply, sizeof(reply));
+    if (ImGui::Button(s.inTitan ? "离开泰坦 (E)" : "进入泰坦 (E)", ImVec2(half, 0))) TlEmbark(reply, sizeof(reply));
+    if (ImGui::Button("关闭连接", ImVec2(-1, 0))) TlUnlink(reply, sizeof(reply));
     if (reply[0]) ImGui::TextUnformatted(reply);
 
     if (s.inMatch) {
-        SectionHeading("Your Titan");
-        if (s.inTitan) ImGui::Text("Piloting it, health %.0f%%", s.titanHealth * 100.0f);
-        else if (s.titanParked && s.titanDistance >= 0) ImGui::Text("Parked %.0f m away, health %.0f%%", s.titanDistance, s.titanHealth * 100.0f);
-        else ImGui::TextUnformatted("None yet: call one with V");
-        if (s.weapon[0]) ImGui::Text("Weapon: %s, clip %d", s.weapon, s.clip);
+        SectionHeading("你的泰坦");
+        if (s.inTitan) ImGui::Text("正在驾驶，生命值 %.0f%%", s.titanHealth * 100.0f);
+        else if (s.titanParked && s.titanDistance >= 0) ImGui::Text("停在 %.0f 米外，生命值 %.0f%%", s.titanDistance, s.titanHealth * 100.0f);
+        else ImGui::TextUnformatted("暂无泰坦，按 V 呼叫");
+        if (s.weapon[0]) ImGui::Text("武器：%s，弹匣 %d", s.weapon, s.clip);
     }
-    Hint("Needs Titanfall 2 with Northstar and the TitanLink plugin (docs/bridges.md). Set the game folder, map and mode in "
-         "data\\titanlink.txt. Star Citizen still sees the keys you press in pilot mode.");
+    Hint("需要安装 Northstar 和 TitanLink 插件的《泰坦陨落 2》（见 docs/bridges.md）。游戏目录、地图和模式在"
+         " data\\titanlink.txt 中设置。铁驭模式下，星际公民仍会接收键盘输入。");
 }

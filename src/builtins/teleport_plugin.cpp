@@ -66,8 +66,8 @@ sco_result TeleportLoad(const sco_api* api, sco_plugin* self) {
     g_api = api;
     g_self = self;
     g_teleportStore.Open(api, self);   // data/storage/teleport.db: the saved spot (teleport.cpp)
-    sco_result r = Register("teleport.save", "Save spot", "Save where you're standing (F7)", Save);
-    if (r == SCO_OK) r = Register("teleport.go", "Go to saved spot", "Teleport to the saved spot (F8)", Go);
+    sco_result r = Register("teleport.save", "保存位置", "保存当前位置 (F7)", Save);
+    if (r == SCO_OK) r = Register("teleport.go", "返回收藏位置", "传送至已保存的位置 (F8)", Go);
     if (r != SCO_OK) { g_api = nullptr; g_self = nullptr; g_teleportStore.Close(); return r; }   // the host releases what was registered
     BindBuiltinHotkey(api, self, "f7", "teleport.save");
     BindBuiltinHotkey(api, self, "f8", "teleport.go");

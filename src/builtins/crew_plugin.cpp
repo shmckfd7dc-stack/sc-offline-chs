@@ -82,7 +82,7 @@ bool Open(const char* name, uint32_t version, const T*& table) {
 // game.vehicles, which every command needs, or a reply saying it isn't there.
 bool Services(char* reply, uint32_t size) {
     if (!Open(SC_VEHICLES_SERVICE_NAME, SC_VEHICLES_SERVICE_VERSION, g_veh)) {
-        snprintf(reply, size, "game.vehicles isn't published (the game pack is off or too old)");
+        snprintf(reply, size, "game.vehicles 不可用（游戏支持包已关闭或版本过旧）");
         return false;
     }
     return true;
@@ -101,7 +101,7 @@ void ActorsWhy(char* out, size_t n) {
 }
 
 sco_result NoTarget(char* reply, uint32_t size) {
-    snprintf(reply, size, "No target ship: stand or sit aboard one (crew.target keeps it after you leave)");
+    snprintf(reply, size, "未选择目标飞船，请先登船（crew.target 可在离船后保留目标）");
     return SCO_FAILED;
 }
 
@@ -123,7 +123,7 @@ int ListSeats(uint64_t& ship, char* reply, uint32_t size) {
     if (r != SCO_OK) {
         char why[160];
         VehicleWhy(why, sizeof(why));
-        snprintf(reply, size, "Can't read the ship's seats: %s", why[0] ? why : "unknown");
+        snprintf(reply, size, "无法读取飞船座位：%s", why[0] ? why : "unknown");
         return -1;
     }
     return static_cast<int>(n);
@@ -181,24 +181,24 @@ sco_result Target(const sco_arg*, uint32_t, void*, char* reply, uint32_t size) {
     if (!Services(reply, size)) return SCO_FAILED;
     uint64_t ship = 0;
     if (g_veh->player_ship(&ship) != SCO_OK) {
-        snprintf(reply, size, "You're not aboard a ship");
+        snprintf(reply, size, "你不在飞船上");
         return SCO_FAILED;
     }
     g_pinned = ship;
-    snprintf(reply, size, "Targeting the ship you're in");
+    snprintf(reply, size, "已选择你所在的飞船");
     return SCO_OK;
 }
 
 sco_result Sit(const sco_arg* args, uint32_t, void*, char* reply, uint32_t size) {
     const char* words = args[0].v.s;
     if (!words || !*words || strlen(words) > 47) {
-        snprintf(reply, size, "Name the seat: words from its name, at most 47 characters (\"pilot\", \"turret left\")");
+        snprintf(reply, size, "输入座位英文名中的词，最多 47 个字符（例如 pilot、turret left）");
         return SCO_BAD_ARG;
     }
     if (!Services(reply, size)) return SCO_FAILED;
     uint64_t me = 0;
     if (!PlayerActor(me)) {
-        snprintf(reply, size, "Can't find your actor (game.actors isn't ready, or you haven't spawned)");
+        snprintf(reply, size, "无法找到你的角色（game.actors 尚未就绪，或你尚未进入游戏世界）");
         return SCO_FAILED;
     }
     uint64_t ship = 0;
@@ -209,14 +209,14 @@ sco_result Sit(const sco_arg* args, uint32_t, void*, char* reply, uint32_t size)
         const sc_vehicle_seat& s = g_seats[i];
         if (!SeatMatches(s.name, words)) continue;
         if (s.occupant_id == me) {
-            snprintf(reply, size, "You're already in %s", s.name);
+            snprintf(reply, size, "你已在 %s 中", s.name);
             return SCO_OK;
         }
         if (!(s.flags & SC_SEAT_USABLE)) { if (!unusable) unusable = &s; continue; }
         if (s.flags & SC_SEAT_OCCUPIED) {
             Job* crew = s.occupant_id ? JobOfActor(s.occupant_id) : nullptr;
             if (!crew || crew->player) {
-                snprintf(reply, size, "Someone this plugin didn't add is in %s; stand them up first", s.name);
+                snprintf(reply, size, "%s 的乘员不是由此插件添加的，请先让其起身", s.name);
                 return SCO_FAILED;
             }
             g_act->despawn(g_self, crew->actor);   // "removing an NPC in it": the seat frees once it's gone
@@ -225,15 +225,15 @@ sco_result Sit(const sco_arg* args, uint32_t, void*, char* reply, uint32_t size)
         if (Job* mine = JobOfActor(me)) *mine = Job();
         Job* j = FreeJob();
         if (!j) {
-            snprintf(reply, size, "The crew list is full (%d): run crew.clear", kMaxJobs);
+            snprintf(reply, size, "船员列表已满（%d），请运行 crew.clear", kMaxJobs);
             return SCO_FAILED;
         }
         StartJob(*j, me, true, ship, s, 0);
-        snprintf(reply, size, "Sitting you in %s", s.name);
+        snprintf(reply, size, "正在让你在 %s 入座", s.name);
         return SCO_OK;
     }
-    if (unusable) snprintf(reply, size, "%s isn't interactable: the game's seat picker skips it", unusable->name);
-    else snprintf(reply, size, "The target ship has no seat matching '%s'", words);
+    if (unusable) snprintf(reply, size, "%s 无法交互，游戏座位选择器会跳过它", unusable->name);
+    else snprintf(reply, size, "目标飞船没有匹配“%s”的座位", words);
     return SCO_FAILED;
 }
 
@@ -255,23 +255,23 @@ sco_result StandAll(const sco_arg*, uint32_t, void*, char* reply, uint32_t size)
             ++others;
         }
     }
-    snprintf(reply, size, others ? "%d stood up; %d others aren't this plugin's to move" : "%d stood up", up, others);
+    snprintf(reply, size, others ? "%d 名乘员已起身；另外 %d 名不由此插件管理，无法移动" : "%d 名乘员已起身", up, others);
     return SCO_OK;
 }
 
 sco_result Fill(const sco_arg* args, uint32_t, void*, char* reply, uint32_t size) {
     const char* npc = args[0].v.s;
     if (!npc || !*npc || strlen(npc) > kMaxNpcClass) {
-        snprintf(reply, size, "Name an NPC archetype from npcs.txt");
+        snprintf(reply, size, "请输入 npcs.txt 中的 NPC 原型名称");
         return SCO_BAD_ARG;
     }
     if (!Services(reply, size)) return SCO_FAILED;
     if (!Open(SC_ACTORS_NAME, SC_ACTORS_VERSION_1_0, g_act) || !g_api->has("game.actors.spawn_npc")) {
-        snprintf(reply, size, "game.actors can't spawn NPCs on this game build");
+        snprintf(reply, size, "此游戏版本的 game.actors 无法生成 NPC");
         return SCO_FAILED;
     }
     if (!Open(SC_SPATIAL_SERVICE_NAME, SC_SPATIAL_SERVICE_VERSION, g_sp)) {
-        snprintf(reply, size, "teleport.spatial isn't published");
+        snprintf(reply, size, "teleport.spatial 不可用");
         return SCO_FAILED;
     }
     uint64_t ship = 0;
@@ -280,7 +280,7 @@ sco_result Fill(const sco_arg* args, uint32_t, void*, char* reply, uint32_t size
     double pos[3], rot[4];
     uint64_t zone = 0;
     if (!g_sp->player_pose(pos, rot, &zone) || !zone) {
-        snprintf(reply, size, "Can't read your position (you haven't spawned yet)");
+        snprintf(reply, size, "无法读取你的位置（尚未进入游戏世界）");
         return SCO_FAILED;
     }
     pos[0] += 1.5;   // beside you; seat() moves the NPC into the ship
@@ -306,20 +306,20 @@ sco_result Fill(const sco_arg* args, uint32_t, void*, char* reply, uint32_t size
         LogF(SCO_LOG_INFO, "spawned %s (%llu) for seat '%s'", npc, static_cast<unsigned long long>(id), s.name);
     }
     if (!seated && why[0]) {
-        snprintf(reply, size, "Couldn't spawn %s: %s", npc, why);
+        snprintf(reply, size, "无法生成 %s：%s", npc, why);
         return SCO_FAILED;
     }
     LogF(SCO_LOG_INFO, "Seating %d x %s (%d seats skipped: not interactable%s)", seated, npc, skipped,
          full ? ", crew list full" : "");
-    snprintf(reply, size, "Seating %d x %s (%d seats skipped: not interactable)%s", seated, npc, skipped,
-             why[0] ? "; stopped early, the game refused a spawn" : "");
+    snprintf(reply, size, "正在安排 %d 个 %s 入座（跳过 %d 个无法交互的座位）%s", seated, npc, skipped,
+             why[0] ? "；游戏拒绝生成，操作提前停止" : "");
     return seated || !n ? SCO_OK : SCO_FAILED;
 }
 
 sco_result Clear(const sco_arg*, uint32_t, void*, char* reply, uint32_t size) {
     if (!Services(reply, size)) return SCO_FAILED;
     if (!Open(SC_ACTORS_NAME, SC_ACTORS_VERSION_1_0, g_act)) {
-        snprintf(reply, size, "game.actors isn't published");
+        snprintf(reply, size, "game.actors 不可用");
         return SCO_FAILED;
     }
     uint64_t ship = 0;
@@ -330,7 +330,7 @@ sco_result Clear(const sco_arg*, uint32_t, void*, char* reply, uint32_t size) {
         if (g_act->despawn(g_self, j.actor) == SCO_OK) ++removed;
         j = Job();
     }
-    snprintf(reply, size, "Removing %d NPCs this plugin added to the target ship", removed);
+    snprintf(reply, size, "正在移除此插件向目标飞船添加的 %d 个 NPC", removed);
     return SCO_OK;
 }
 
@@ -341,10 +341,10 @@ sco_result PowerOn(const sco_arg*, uint32_t, void*, char* reply, uint32_t size) 
     if (g_veh->power_on(g_self, ship) != SCO_OK) {
         char why[160];
         VehicleWhy(why, sizeof(why));
-        snprintf(reply, size, "Flight Ready didn't go out: %s", why[0] ? why : "unknown");
+        snprintf(reply, size, "飞行准备指令发送失败：%s", why[0] ? why : "unknown");
         return SCO_FAILED;
     }
-    snprintf(reply, size, "Sending Flight Ready to the target ship");
+    snprintf(reply, size, "正在向目标飞船发送飞行准备指令");
     return SCO_OK;
 }
 
@@ -409,7 +409,7 @@ sco_result CrewLoad(const sco_api* api, sco_plugin* self) {
     if (r == SCO_OK) r = api->subscribe(self, "tick", OnTick, nullptr);
     if (r != SCO_OK) return r;   // the host releases what was registered
     // Its page of the menu (and keys), through sco.ui; the menu shell draws it (tabs.h).
-    RegisterBuiltinTab(api, self, "crew.crew", "Crew", kTabCrew, DrawCrewTab);
+    RegisterBuiltinTab(api, self, "crew.crew", "船员", kTabCrew, DrawCrewTab);
     g_ticking = true;
     return SCO_OK;
 }

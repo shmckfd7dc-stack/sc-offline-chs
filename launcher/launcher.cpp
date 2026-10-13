@@ -53,6 +53,7 @@
 #include "../src/version.h"
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include "../src/third_party/imgui/imgui.h"
+#include "../src/chinese_font.h"
 #include "../src/third_party/imgui/imgui_impl_win32.h"
 #include "../src/third_party/imgui/imgui_impl_dx11.h"
 #include "../src/third_party/imgui/imgui_internal.h"
@@ -133,7 +134,7 @@ static void PauseIfOwnConsole() {
     if (GuiChild()) return;
     DWORD ids[2];
     if (GetConsoleProcessList(ids, 2) > 1) return;
-    std::printf("\nPress Enter to close this window.");
+    std::printf("\n按回车键关闭此窗口。");
     std::getchar();
 }
 
@@ -236,7 +237,7 @@ static bool ReadConfig(const wstring& path, Config& c) {
         wstring line = text.substr(pos, nl - pos); pos = nl + 1; ++lineNo;
         if (Trim(line).empty() || Trim(line)[0] == L'#') continue;   // whole-line comments only: paths may hold '#'
         const size_t eq = line.find(L'=');
-        if (eq == wstring::npos) { Out("[!] sc-offline.ini line %d: expected key = value\n", lineNo); continue; }
+        if (eq == wstring::npos) { Out("[!] sc-offline.ini 第 %d 行：应为 key = value 格式\n", lineNo); continue; }
         const wstring k = Trim(line.substr(0, eq)), v = Trim(line.substr(eq + 1));
         if      (!_wcsicmp(k.c_str(), L"game"))       c.game = v;
         else if (!_wcsicmp(k.c_str(), L"channel"))    { if (!v.empty()) c.channel = v; }
@@ -245,54 +246,54 @@ static bool ReadConfig(const wstring& path, Config& c) {
         else if (!_wcsicmp(k.c_str(), L"start"))      c.start = v;
         else if (!_wcsicmp(k.c_str(), L"block_network") || !_wcsicmp(k.c_str(), L"eac_hosts") || !_wcsicmp(k.c_str(), L"eac_rename")) {
             bool& b = !_wcsicmp(k.c_str(), L"block_network") ? c.firewall : !_wcsicmp(k.c_str(), L"eac_hosts") ? c.eacHosts : c.eacRename;
-            if (!ParseOnOff(v, b)) Out("[!] sc-offline.ini line %d: %ls must be on or off\n", lineNo, k.c_str());
+            if (!ParseOnOff(v, b)) Out("[!] sc-offline.ini 第 %d 行：%ls 必须为 on 或 off\n", lineNo, k.c_str());
         }
         else if (!_wcsicmp(k.c_str(), L"crash_reports")) {
-            if (!ParseOnOff(v, c.crashReports)) Out("[!] sc-offline.ini line %d: crash_reports must be on or off\n", lineNo);
+            if (!ParseOnOff(v, c.crashReports)) Out("[!] sc-offline.ini 第 %d 行：crash_reports 必须为 on 或 off\n", lineNo);
         }
         else if (!_wcsicmp(k.c_str(), L"discord_presence")) {
             bool on = true;
             if (ParseOnOff(v, on)) c.discordOff = !on;
         }
         else if (!_wcsicmp(k.c_str(), L"plugins")) {
-            if (!ParseOnOff(v, c.plugins)) Out("[!] sc-offline.ini line %d: plugins must be on or off\n", lineNo);
+            if (!ParseOnOff(v, c.plugins)) Out("[!] sc-offline.ini 第 %d 行：plugins 必须为 on 或 off\n", lineNo);
         }
         else if (!_wcsicmp(k.c_str(), L"multiplayer")) {
-            if (!ParseOnOff(v, c.multiplayer)) Out("[!] sc-offline.ini line %d: multiplayer must be on or off\n", lineNo);
+            if (!ParseOnOff(v, c.multiplayer)) Out("[!] sc-offline.ini 第 %d 行：multiplayer 必须为 on 或 off\n", lineNo);
         }
         else if (!_wcsicmp(k.c_str(), L"multiplayer_allow")) {
             std::vector<Ipv4Range> ranges;
             if (!ParseAllowList(v, ranges, c.multiplayerAllow)) {
                 c.multiplayerAllow.clear();
-                Out("[!] sc-offline.ini line %d: multiplayer_allow must be up to 8 IPv4 ranges like 100.64.0.0/10 (/8 or narrower); ignored\n", lineNo);
+                Out("[!] sc-offline.ini 第 %d 行：multiplayer_allow 最多支持 8 个 IPv4 网段，如 100.64.0.0/10（/8 或更小范围）；已忽略\n", lineNo);
             }
         }
         else if (!_wcsicmp(k.c_str(), L"asop")) {
-            if (!ParseOnOff(v, c.asop)) Out("[!] sc-offline.ini line %d: asop must be on or off\n", lineNo);
+            if (!ParseOnOff(v, c.asop)) Out("[!] sc-offline.ini 第 %d 行：asop 必须为 on 或 off\n", lineNo);
         }
         else if (!_wcsicmp(k.c_str(), L"asop_fleet_list")) {
             if (!_wcsicmp(v.c_str(), L"game") || !_wcsicmp(v.c_str(), L"ships")) c.asopFleetList = v;
-            else Out("[!] sc-offline.ini line %d: asop_fleet_list must be game or ships\n", lineNo);
+            else Out("[!] sc-offline.ini 第 %d 行：asop_fleet_list 必须为 game 或 ships\n", lineNo);
         }
         else if (!_wcsicmp(k.c_str(), L"mining")) {
-            if (!ParseOnOff(v, c.mining)) Out("[!] sc-offline.ini line %d: mining must be on or off\n", lineNo);
+            if (!ParseOnOff(v, c.mining)) Out("[!] sc-offline.ini 第 %d 行：mining 必须为 on 或 off\n", lineNo);
         }
         else if (!_wcsicmp(k.c_str(), L"mining_debug")) {
-            if (!ParseOnOff(v, c.miningDebug)) Out("[!] sc-offline.ini line %d: mining_debug must be on or off\n", lineNo);
+            if (!ParseOnOff(v, c.miningDebug)) Out("[!] sc-offline.ini 第 %d 行：mining_debug 必须为 on 或 off\n", lineNo);
         }
         else if (!_wcsicmp(k.c_str(), L"check_updates")) {
-            if (!ParseOnOff(v, c.checkUpdates)) Out("[!] sc-offline.ini line %d: check_updates must be on or off\n", lineNo);
+            if (!ParseOnOff(v, c.checkUpdates)) Out("[!] sc-offline.ini 第 %d 行：check_updates 必须为 on 或 off\n", lineNo);
         }
         else if (!_wcsicmp(k.c_str(), L"update_channel")) {
             if (!_wcsicmp(v.c_str(), L"stable")) c.prereleases = false;
             else if (!_wcsicmp(v.c_str(), L"prerelease")) c.prereleases = true;
-            else Out("[!] sc-offline.ini line %d: update_channel must be stable or prerelease\n", lineNo);
+            else Out("[!] sc-offline.ini 第 %d 行：update_channel 必须为 stable 或 prerelease\n", lineNo);
         }
         else if (!_wcsicmp(k.c_str(), L"clean_logs")) {
             if (!_wcsicmp(v.c_str(), L"ask")) c.cleanLogs = true;
-            else if (!ParseOnOff(v, c.cleanLogs)) Out("[!] sc-offline.ini line %d: clean_logs must be ask or off\n", lineNo);
+            else if (!ParseOnOff(v, c.cleanLogs)) Out("[!] sc-offline.ini 第 %d 行：clean_logs 必须为 ask 或 off\n", lineNo);
         }
-        else Out("[!] sc-offline.ini line %d: unknown key '%ls'\n", lineNo, k.c_str());
+        else Out("[!] sc-offline.ini 第 %d 行：未知配置项“%ls”\n", lineNo, k.c_str());
     }
     return true;
 }
@@ -381,8 +382,8 @@ static std::string Sha256(const std::string& bytes) {
 // replaced: sc-offline.ini is kept (new keys are appended to it, commented out), and anything in
 // data\ that the release doesn't ship (wallet, saved places, bookmarks, logs) is left alone.
 
-static const wchar_t* kReleasesApi = L"https://api.github.com/repos/scubamount/sc-offline/releases/latest";
-static const wchar_t* kReleasesList = L"https://api.github.com/repos/scubamount/sc-offline/releases?per_page=20";
+static const wchar_t* kReleasesApi = L"https://api.github.com/repos/shmckfd7dc-stack/sc-offline-chs/releases/latest";
+static const wchar_t* kReleasesList = L"https://api.github.com/repos/shmckfd7dc-stack/sc-offline-chs/releases?per_page=20";
 
 static bool HttpGet(const wstring& url, std::string& body, DWORD timeoutMs, size_t cap) {
     body.clear();
@@ -493,9 +494,9 @@ static size_t SkipJsonValue(const std::string& j, size_t i) {
 // The release object at body[top]: its tag and the sc-offline-<tag>.zip asset with a SHA-256 digest.
 static bool ReleaseAsset(const std::string& body, size_t top, UpdateInfo& u, std::string& why) {
     std::string tag, raw; size_t at = 0;
-    if (!JsonKey(body, top, "tag_name", tag)) { why = "unexpected reply from GitHub"; return false; }
+    if (!JsonKey(body, top, "tag_name", tag)) { why = "GitHub 返回了意外响应"; return false; }
     const std::string want = "sc-offline-" + tag + ".zip";
-    if (!JsonKey(body, top, "assets", raw, &at) || at >= body.size() || body[at] != '[') { why = tag + " has no assets"; return false; }
+    if (!JsonKey(body, top, "assets", raw, &at) || at >= body.size() || body[at] != '[') { why = tag + "没有可下载的文件"; return false; }
     for (size_t i = at + 1; i < body.size();) {
         while (i < body.size() && (isspace((unsigned char)body[i]) || body[i] == ',')) ++i;
         if (i >= body.size() || body[i] != '{') break;
@@ -512,7 +513,7 @@ static bool ReleaseAsset(const std::string& body, size_t top, UpdateInfo& u, std
         }
         i = SkipJsonValue(body, i);
     }
-    why = tag + " has no " + want + " with a SHA-256 digest";
+    why = tag + "缺少 " + want + "及其 SHA-256 摘要";
     return false;
 }
 
@@ -524,11 +525,11 @@ static UpdateInfo CheckLatest(DWORD timeoutMs, bool prerelease, std::string* why
     UpdateInfo u;
     std::string body, w;
     const wstring url = prerelease ? wstring(kReleasesList) : wstring(kReleasesApi);
-    if (!HttpGet(url, body, timeoutMs, 4u << 20)) { if (why) *why = "couldn't reach GitHub"; return u; }
+    if (!HttpGet(url, body, timeoutMs, 4u << 20)) { if (why) *why = "无法连接 GitHub"; return u; }
     // One release object (stable) or an array of them (prerelease); take the newest acceptable one.
     std::vector<size_t> tops;
     size_t first = body.find_first_not_of(" \t\r\n");
-    if (first == std::string::npos) { if (why) *why = "unexpected reply from GitHub"; return u; }
+    if (first == std::string::npos) { if (why) *why = "GitHub 返回了意外响应"; return u; }
     if (body[first] == '{') tops.push_back(first);
     else if (body[first] == '[')
         for (size_t i = first + 1; i < body.size();) {
@@ -542,7 +543,7 @@ static UpdateInfo CheckLatest(DWORD timeoutMs, bool prerelease, std::string* why
         std::string tag, pre, draft;
         if (!JsonKey(body, top, "tag_name", tag)) continue;
         JsonKey(body, top, "prerelease", pre); JsonKey(body, top, "draft", draft);
-        if (draft == "true" || (!prerelease && pre == "true")) { if (tops.size() == 1) w = "latest release is a pre-release"; continue; }
+        if (draft == "true" || (!prerelease && pre == "true")) { if (tops.size() == 1) w = "最新发布版本是预发布版"; continue; }
         if (newestSeen.empty() || VersionGreater(tag, newestSeen)) newestSeen = tag;
         if (!VersionGreater(tag, SCO_VERSION)) continue;
         if (!best.empty() && !VersionGreater(tag, best)) continue;
@@ -550,7 +551,7 @@ static UpdateInfo CheckLatest(DWORD timeoutMs, bool prerelease, std::string* why
         if (ReleaseAsset(body, top, cand, candWhy)) { u = cand; best = tag; }
         else w = candWhy;
     }
-    if (u.tag.empty() && why) *why = !w.empty() ? w : newestSeen.empty() ? std::string("no releases found") : "up to date (latest " + newestSeen + ")";
+    if (u.tag.empty() && why) *why = !w.empty() ? w : newestSeen.empty() ? std::string("未找到发布版本") : "已是最新版本（最新为 " + newestSeen + ")";
     return u;
 }
 
@@ -618,37 +619,37 @@ static bool ParseManifest(const std::string& j, Manifest& m, std::string& why) {
     m = Manifest{};
     const size_t top = j.find('{');
     std::string format;
-    if (top == std::string::npos || !JsonKey(j, top, "format", format) || format != "1") { why = "manifest format isn't 1"; return false; }
-    if (!JsonKey(j, top, "version", m.version) || !JsonKey(j, top, "tag", m.tag)) { why = "manifest has no version or tag"; return false; }
+    if (top == std::string::npos || !JsonKey(j, top, "format", format) || format != "1") { why = "清单格式不是 1"; return false; }
+    if (!JsonKey(j, top, "version", m.version) || !JsonKey(j, top, "tag", m.tag)) { why = "清单缺少版本或标签"; return false; }
     JsonKey(j, top, "commit", m.commit);
     std::string raw; size_t at = 0;
-    if (!JsonKey(j, top, "files", raw, &at) || at >= j.size() || j[at] != '[') { why = "manifest has no files list"; return false; }
+    if (!JsonKey(j, top, "files", raw, &at) || at >= j.size() || j[at] != '[') { why = "清单缺少文件列表"; return false; }
     for (size_t i = at + 1; i < j.size();) {
         while (i < j.size() && (isspace((unsigned char)j[i]) || j[i] == ',')) ++i;
         if (i >= j.size() || j[i] == ']') break;
-        if (j[i] != '{') { why = "manifest files list is malformed"; return false; }
+        if (j[i] != '{') { why = "清单文件列表格式错误"; return false; }
         ManifestFile f; std::string size;
         if (!JsonKey(j, i, "path", f.path) || !JsonKey(j, i, "sha256", f.sha256) || !JsonKey(j, i, "size", size)) {
-            why = "a manifest entry lacks path, sha256 or size"; return false;
+            why = "清单条目缺少 path、sha256 或 size"; return false;
         }
         for (char& c : f.sha256) c = (char)tolower((unsigned char)c);
-        if (!IsHex64(f.sha256)) { why = "bad sha256 for " + f.path; return false; }
-        if (size.empty() || size.size() > 15 || size.find_first_not_of("0123456789") != std::string::npos) { why = "bad size for " + f.path; return false; }
+        if (!IsHex64(f.sha256)) { why = "SHA-256 无效：" + f.path; return false; }
+        if (size.empty() || size.size() > 15 || size.find_first_not_of("0123456789") != std::string::npos) { why = "文件大小无效：" + f.path; return false; }
         f.size = std::stoull(size);
-        if (SafeRelPath(f.path).empty()) { why = "refused path in manifest: " + f.path; return false; }
-        for (const ManifestFile& o : m.files) if (!_stricmp(o.path.c_str(), f.path.c_str())) { why = "path listed twice: " + f.path; return false; }
+        if (SafeRelPath(f.path).empty()) { why = "清单中的路径被拒绝：" + f.path; return false; }
+        for (const ManifestFile& o : m.files) if (!_stricmp(o.path.c_str(), f.path.c_str())) { why = "路径重复：" + f.path; return false; }
         m.files.push_back(f);
         i = SkipJsonValue(j, i);
     }
-    if (m.files.empty()) { why = "manifest lists no files"; return false; }
+    if (m.files.empty()) { why = "清单未列出文件"; return false; }
     return true;
 }
 
 // S2: the manifest must belong to the release that was asked for, and be newer than this launcher.
 static bool ManifestMatchesRelease(const Manifest& m, const std::string& tag, std::string& why) {
-    if (m.tag != tag) { why = "manifest tag " + m.tag + " isn't the release tag " + tag; return false; }
-    if ("v" + m.version != tag) { why = "manifest version " + m.version + " doesn't match tag " + tag; return false; }
-    if (!VersionGreater(m.version, SCO_VERSION)) { why = "manifest version " + m.version + " isn't newer than " + SCO_VERSION; return false; }
+    if (m.tag != tag) { why = "清单标签 " + m.tag + " 与发布标签不符：" + tag; return false; }
+    if ("v" + m.version != tag) { why = "清单版本 " + m.version + " 与标签不符：" + tag; return false; }
+    if (!VersionGreater(m.version, SCO_VERSION)) { why = "清单版本 " + m.version + " 不高于当前版本：" + SCO_VERSION; return false; }
     return true;
 }
 
@@ -686,10 +687,10 @@ static bool VerifyAgainstManifest(const wstring& root, const Manifest& m, std::s
     for (const ManifestFile& f : m.files) {
         const wstring p = root + L"\\" + SafeRelPath(f.path);
         const DWORD a = GetFileAttributesW(p.c_str());
-        if (a == INVALID_FILE_ATTRIBUTES || (a & (FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_REPARSE_POINT))) { why = f.path + " is missing"; return false; }
+        if (a == INVALID_FILE_ATTRIBUTES || (a & (FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_REPARSE_POINT))) { why = f.path + " 缺失"; return false; }
         unsigned long long size = 0;
         const std::string got = FileSha256(p, &size);
-        if (got != f.sha256 || size != f.size) { why = f.path + " doesn't match the manifest"; return false; }
+        if (got != f.sha256 || size != f.size) { why = f.path + " 与清单不符"; return false; }
     }
     return true;
 }
@@ -770,7 +771,7 @@ static bool MoveRetrying(const wstring& from, const wstring& to, DWORD flags) {
         if (MoveFileExW(from.c_str(), to.c_str(), flags)) return true;
         const DWORD e = GetLastError();
         if (!TransientLock(e) || i == ARRAYSIZE(kLockWaits)) { SetLastError(e); return false; }
-        Out("[i] %ls is in use (error %lu, antivirus?); trying again in %lu ms\n", from.c_str(), e, kLockWaits[i]);
+        Out("[i] %ls 正被占用（错误 %lu，可能是杀毒软件）；%lu 毫秒后重试\n", from.c_str(), e, kLockWaits[i]);
         Sleep(kLockWaits[i]);
     }
 }
@@ -822,7 +823,7 @@ static void SettlePreviousUpdate(const wstring& here) {
     if (!ReadAll(Journal(here), j)) return;
     const bool done = j.size() >= 5 && j.compare(j.size() - 5, 5, "done\n") == 0;
     if (!done) {
-        Out("[!] a previous update didn't finish; putting the old files back\n");
+        Out("[!] 上次更新未完成，正在恢复旧文件\n");
         RollBackUpdate(here);
     }
     bool leftover = false;
@@ -860,7 +861,7 @@ static void MergeIni(const wstring& here, const wstring& newIni, const std::stri
     for (const auto& kv : keys(theirs)) {
         bool have = false;
         for (const auto& m : mineKeys) if (!_stricmp(m.first.c_str(), kv.first.c_str())) { have = true; break; }
-        if (!have) { add += "# " + kv.second + "\r\n"; Out("[i] sc-offline.ini: new setting %s (added commented out; the default applies)\n", kv.first.c_str()); }
+        if (!have) { add += "# " + kv.second + "\r\n"; Out("[i] sc-offline.ini：新增配置项 %s（已作为注释添加，使用默认值）\n", kv.first.c_str()); }
     }
     if (add.empty()) return;
     if (!mine.empty() && mine.back() != '\n') mine += "\r\n";
@@ -887,7 +888,7 @@ static wstring StageRoot(const wstring& here) {
 // Reads and checks a staged manifest: parses, belongs to `tag`, newer than this launcher (S2).
 static bool LoadManifest(const wstring& dir, const std::string& tag, Manifest& man, std::string& why) {
     std::string text;
-    if (!ReadAll(dir + L"\\manifest.json", text)) { why = "no manifest.json"; return false; }
+    if (!ReadAll(dir + L"\\manifest.json", text)) { why = "缺少 manifest.json"; return false; }
     return ParseManifest(text, man, why) && ManifestMatchesRelease(man, tag, why);
 }
 
@@ -901,14 +902,14 @@ static bool StageZip(const wstring& root, const wstring& zipPath, const std::str
     const wstring tar = wstring(sys) + L"\\tar.exe";
     DWORD code = 1;
     if (!IsFile(tar) || !RunWait(tar, L"\"" + tar + L"\" -xf \"" + zipPath + L"\" -C \"" + ex + L"\"", ex, code) || code) {
-        Out("[!] couldn't unpack the zip (Windows' tar.exe %s); nothing changed.\n"
-            "    Update by hand: %s\n", IsFile(tar) ? "failed" : "is missing", "https://github.com/scubamount/sc-offline/releases/latest");
+        Out("[!] 无法解压压缩包（Windows tar.exe %s），未作任何更改。\n"
+            "    请手动更新：%s\n", IsFile(tar) ? "failed" : "is missing", "https://github.com/shmckfd7dc-stack/sc-offline-chs/releases/latest");
         return false;
     }
     const wstring pkg = ex + L"\\sc-offline-" + Wide(tag);
     Manifest man; std::string why;
     if (!LoadManifest(pkg, tag, man, why) || !VerifyAgainstManifest(pkg, man, why)) {
-        Out("[!] the release's manifest check failed (%s); nothing changed\n", why.c_str());
+        Out("[!] 发布文件清单校验失败（%s），未作任何更改\n", why.c_str());
         return false;
     }
     for (const wstring& rel : FilesUnder(ex)) {
@@ -917,10 +918,10 @@ static bool StageZip(const wstring& root, const wstring& zipPath, const std::str
         const wstring sub = inPkg ? rel.substr(prefix.size()) : rel;
         bool listed = inPkg && !_wcsicmp(sub.c_str(), L"manifest.json");
         for (const ManifestFile& f : man.files) if (inPkg && !_wcsicmp(SafeRelPath(f.path).c_str(), sub.c_str())) { listed = true; break; }
-        if (!listed) { Out("[!] the zip holds %ls, which its manifest doesn't list; nothing changed\n", rel.c_str()); return false; }
+        if (!listed) { Out("[!] 压缩包包含清单未列出的 %ls，未作任何更改\n", rel.c_str()); return false; }
     }
     if (!IsFile(pkg + L"\\sc-offline.exe") || !IsFile(pkg + L"\\dinput8.dll")) {
-        Out("[!] the release doesn't hold sc-offline.exe and dinput8.dll; nothing changed\n");
+        Out("[!] 发布包缺少 sc-offline.exe 或 dinput8.dll，未作任何更改\n");
         return false;
     }
     CreateDirectoryW(staged.c_str(), nullptr);
@@ -929,15 +930,15 @@ static bool StageZip(const wstring& root, const wstring& zipPath, const std::str
         const size_t cut = rel.find_last_of(L'\\');
         if (cut != wstring::npos) SHCreateDirectoryExW(nullptr, (staged + L"\\" + rel.substr(0, cut)).c_str(), nullptr);
         if (!CopyFileW((pkg + L"\\" + rel).c_str(), (staged + L"\\" + rel).c_str(), FALSE)) {
-            Out("[!] couldn't stage %ls (error %lu); nothing changed\n", rel.c_str(), GetLastError()); return false;
+            Out("[!] 无法暂存 %ls（错误 %lu），未作任何更改\n", rel.c_str(), GetLastError()); return false;
         }
     }
     if (!CopyFileW((pkg + L"\\manifest.json").c_str(), (staged + L"\\manifest.json").c_str(), FALSE) ||
         !VerifyAgainstManifest(staged, man, why)) {
-        Out("[!] staging failed (%s); nothing changed\n", why.empty() ? "manifest.json" : why.c_str()); return false;
+        Out("[!] 暂存失败（%s），未作任何更改\n", why.empty() ? "manifest.json" : why.c_str()); return false;
     }
     RemoveTree(ex);
-    Out("[+] all %zu files match the release manifest (%s); staged\n", man.files.size(), man.tag.c_str());
+    Out("[+] 全部 %zu 个文件均通过发布清单校验（%s），已暂存\n", man.files.size(), man.tag.c_str());
     return true;
 }
 
@@ -950,24 +951,24 @@ static bool StageUpdate(const wstring& here, const UpdateInfo& u) {
     ULARGE_INTEGER freeBytes{};
     const unsigned long long need = (u.size ? u.size : (64ull << 20)) * 6 + (32ull << 20);
     if (GetDiskFreeSpaceExW(root.c_str(), &freeBytes, nullptr, nullptr) && freeBytes.QuadPart < need) {
-        Out("[!] not enough free disk space for the update (%llu MB free, %llu MB needed); nothing changed\n",
+        Out("[!] 更新所需磁盘空间不足（可用 %llu MB，需要 %llu MB），未作任何更改\n",
             freeBytes.QuadPart >> 20, need >> 20);
         return false;
     }
-    Out("[i] downloading %s ...\n", u.zipName.c_str());
+    Out("[i] 正在下载 %s……\n", u.zipName.c_str());
     std::string zip;
     // D3: the timeout is per read (a stalled download), not for the whole file; one retry.
     bool got = HttpGet(Wide(u.zipUrl), zip, 30000, 256u << 20);
-    if (!got) { Out("[i] the download stalled or failed; trying once more\n"); got = HttpGet(Wide(u.zipUrl), zip, 30000, 256u << 20); }
-    if (!got) { Out("[!] download failed; nothing changed\n"); return false; }
+    if (!got) { Out("[i] 下载停滞或失败，正在重试\n"); got = HttpGet(Wide(u.zipUrl), zip, 30000, 256u << 20); }
+    if (!got) { Out("[!] 下载失败，未作任何更改\n"); return false; }
     const std::string digest = Sha256(zip);
     if (digest != u.sha256) {
-        Out("[!] the download doesn't match GitHub's SHA-256 (got %s, expected %s); nothing changed\n", digest.c_str(), u.sha256.c_str());
+        Out("[!] 下载文件的 SHA-256 与 GitHub 不符（实际 %s，预期 %s），未作任何更改\n", digest.c_str(), u.sha256.c_str());
         return false;
     }
-    Out("[+] SHA-256 matches GitHub's digest\n");
+    Out("[+] SHA-256 与 GitHub 摘要一致\n");
     const wstring zipPath = root + L"\\" + Wide(u.zipName);
-    if (!WriteAll(zipPath, zip)) { Out("[!] couldn't save the download; nothing changed\n"); return false; }
+    if (!WriteAll(zipPath, zip)) { Out("[!] 无法保存下载文件，未作任何更改\n"); return false; }
     const bool ok = StageZip(root, zipPath, u.tag);
     DeleteFileW(zipPath.c_str());
     if (!ok) { RemoveTree(root + L"\\staged"); RemoveTree(root + L"\\new"); }
@@ -981,10 +982,10 @@ static bool SelfTestPasses(const wstring& here, const std::string& tag);
 static bool SwapStaged(const wstring& here, const wstring& staged, const std::string& tag) {
     // D4: never swap files under a running game (it may hold dinput8.dll, and the player would get
     // a half-updated mod on the next start).
-    if (GameRunning()) { Out("[!] %ls is running; close it before updating. Nothing changed\n", kGameExe); return false; }
+    if (GameRunning()) { Out("[!] %ls 正在运行，请关闭后再更新。未作任何更改\n", kGameExe); return false; }
     Manifest man; std::string why;
     if (!LoadManifest(staged, tag, man, why) || !VerifyAgainstManifest(staged, man, why)) {
-        Out("[!] the staged update doesn't match its manifest (%s); nothing changed\n", why.c_str());
+        Out("[!] 暂存更新与清单不符（%s），未作任何更改\n", why.c_str());
         return false;
     }
     CreateDirectoryW((here + L"\\data").c_str(), nullptr);
@@ -1009,20 +1010,20 @@ static bool SwapStaged(const wstring& here, const wstring& staged, const std::st
         if (cut != wstring::npos) SHCreateDirectoryExW(nullptr, (here + L"\\" + rel.substr(0, cut)).c_str(), nullptr);
         // D1: write the new file beside its target, flushed to disk, and check it before anything moves.
         if (!CopyFlushed(src, fresh) || FileSha256(fresh) != mf.sha256) {
-            Out("[!] couldn't write %ls (error %lu)\n", rel.c_str(), GetLastError()); DeleteFileW(fresh.c_str()); ok = false; break;
+            Out("[!] 无法写入 %ls（错误 %lu）\n", rel.c_str(), GetLastError()); DeleteFileW(fresh.c_str()); ok = false; break;
         }
         const bool had = IsFile(dst);
         if (!JournalLine(here, std::string(had ? "R " : "N ") + Narrow(rel))) { DeleteFileW(fresh.c_str()); ok = false; break; }
         if (had && !MoveRetrying(dst, dst + L".update-old", MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH)) {
-            Out("[!] couldn't move %ls aside (error %lu)\n", rel.c_str(), GetLastError()); DeleteFileW(fresh.c_str()); ok = false; break;
+            Out("[!] 无法备份 %ls（错误 %lu）\n", rel.c_str(), GetLastError()); DeleteFileW(fresh.c_str()); ok = false; break;
         }
         if (!MoveRetrying(fresh, dst, MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH) || FileSha256(dst) != mf.sha256) {
-            Out("[!] couldn't put %ls in place (error %lu)\n", rel.c_str(), GetLastError()); DeleteFileW(fresh.c_str()); ok = false; break;
+            Out("[!] 无法替换 %ls（错误 %lu）\n", rel.c_str(), GetLastError()); DeleteFileW(fresh.c_str()); ok = false; break;
         }
         ++(had ? replaced : added); ++done;
     }
     if (!ok) {
-        Out("[!] update failed; putting the old files back\n");
+        Out("[!] 更新失败，正在恢复旧文件\n");
         RollBackUpdate(here);
         DeleteFileW(Journal(here).c_str());
         return false;
@@ -1030,14 +1031,14 @@ static bool SwapStaged(const wstring& here, const wstring& staged, const std::st
     // D5: the new launcher must start. If its --self-test fails, the old files go back; the
     // .update-old copies stay until the next good start (SettlePreviousUpdate) either way.
     if (!SelfTestPasses(here, tag)) {
-        Out("[!] the new sc-offline.exe failed its self-test; putting the old files back\n");
+        Out("[!] 新版 sc-offline.exe 自检失败，正在恢复旧文件\n");
         RollBackUpdate(here);
         DeleteFileW(Journal(here).c_str());
         return false;
     }
     if (IsFile(staged + L"\\sc-offline.ini")) MergeIni(here, staged + L"\\sc-offline.ini", tag);
     JournalLine(here, "done");
-    Out("[+] updated to %s: %d files replaced, %d added; your saves and sc-offline.ini were kept\n", tag.c_str(), replaced, added);
+    Out("[+] 已更新至 %s：替换 %d 个文件，新增 %d 个；存档和 sc-offline.ini 已保留\n", tag.c_str(), replaced, added);
     return true;
 }
 
@@ -1046,16 +1047,16 @@ static bool SwapStaged(const wstring& here, const wstring& staged, const std::st
 // starts the game or relaunches, so the new launcher (and the game) still start with normal rights.
 static bool SwapMaybeElevated(const wstring& here, const wstring& staged, const std::string& tag) {
     if (CanWriteTo(here) && CanWriteTo(here + L"\\data")) return SwapStaged(here, staged, tag);
-    Out("[i] this folder needs administrator rights to update; Windows will ask once.\n"
-        "    (Only the file swap runs as administrator; the game never does.)\n");
+    Out("[i] 更新此目录需要管理员权限，Windows 将请求一次授权。\n"
+        "    （只有文件替换过程使用管理员权限，游戏不会。）\n");
     wchar_t self[MAX_PATH * 2]; GetModuleFileNameW(nullptr, self, ARRAYSIZE(self));
     const wstring args = L"--elevated-update " + Wide(tag) + L" \"" + staged + L"\"";
     SHELLEXECUTEINFOW sei{}; sei.cbSize = sizeof(sei); sei.fMask = SEE_MASK_NOCLOSEPROCESS;
     sei.lpVerb = L"runas"; sei.lpFile = self; sei.lpParameters = args.c_str(); sei.lpDirectory = here.c_str(); sei.nShow = SW_SHOWNORMAL;
-    if (!ShellExecuteExW(&sei) || !sei.hProcess) { Out("[!] administrator rights refused; nothing changed\n"); return false; }
+    if (!ShellExecuteExW(&sei) || !sei.hProcess) { Out("[!] 管理员权限被拒绝，未作任何更改\n"); return false; }
     WaitForSingleObject(sei.hProcess, INFINITE);
     DWORD code = 1; GetExitCodeProcess(sei.hProcess, &code); CloseHandle(sei.hProcess);
-    if (code) { Out("[!] the update failed (exit %lu); see data\\launcher.log. Your current version is unchanged.\n", code); return false; }
+    if (code) { Out("[!] 更新失败（退出码 %lu），详见 data\\launcher.log。当前版本未更改。\n", code); return false; }
     return true;
 }
 
@@ -1064,7 +1065,7 @@ static int ElevatedUpdate(const wstring& here, const wstring& tag, const wstring
     OpenLog(here + L"\\data", true, "elevated update");
     const wstring tail = L"\\update\\staged";
     if (staged.size() <= tail.size() || _wcsicmp(staged.c_str() + staged.size() - tail.size(), tail.c_str())) {
-        Out("[!] refusing staging folder %ls\n", staged.c_str()); return kExitError;
+        Out("[!] 暂存目录被拒绝：%ls\n", staged.c_str()); return kExitError;
     }
     return SwapStaged(here, StripSlashes(staged), Narrow(tag)) ? kExitOk : kExitError;
 }
@@ -1097,13 +1098,13 @@ static bool SelfTestPasses(const wstring& here, const std::string& tag) {
         SaferCloseLevel(level);
     }
     if (!started) started = CreateProcessW(exe.c_str(), cmd.data(), nullptr, nullptr, FALSE, CREATE_NO_WINDOW, nullptr, here.c_str(), &si, &pi) != 0;
-    if (!started) { Out("[!] couldn't start the new sc-offline.exe (error %lu)\n", GetLastError()); return false; }
+    if (!started) { Out("[!] 无法启动新版 sc-offline.exe（错误 %lu）\n", GetLastError()); return false; }
     DWORD code = 1;
-    if (WaitForSingleObject(pi.hProcess, 30000) != WAIT_OBJECT_0) { TerminateProcess(pi.hProcess, 1); WaitForSingleObject(pi.hProcess, 5000); Out("[!] the new sc-offline.exe hung in its self-test\n"); }
+    if (WaitForSingleObject(pi.hProcess, 30000) != WAIT_OBJECT_0) { TerminateProcess(pi.hProcess, 1); WaitForSingleObject(pi.hProcess, 5000); Out("[!] 新版 sc-offline.exe 自检无响应\n"); }
     else GetExitCodeProcess(pi.hProcess, &code);
     CloseHandle(pi.hThread); CloseHandle(pi.hProcess);
-    if (code) { Out("[!] the new sc-offline.exe --self-test exited %lu\n", code); return false; }
-    Out("[+] the new sc-offline.exe passed its self-test\n");
+    if (code) { Out("[!] 新版 sc-offline.exe --self-test 退出码为 %lu\n", code); return false; }
+    Out("[+] 新版 sc-offline.exe 已通过自检\n");
     return true;
 }
 
@@ -1131,13 +1132,13 @@ static int ApplyZipForTest(const wstring& zipPath, const wstring& tagW, const ws
     const std::string tag = Narrow(tagW);
     std::string sha = Narrow(shaW), zip;
     for (char& c : sha) c = (char)tolower((unsigned char)c);
-    if (!ReadAll(zipPath, zip)) { Out("[!] can't read %ls\n", zipPath.c_str()); return kExitError; }
-    if (Sha256(zip) != sha) { Out("[!] the zip doesn't match the given SHA-256; nothing changed\n"); return kExitError; }
+    if (!ReadAll(zipPath, zip)) { Out("[!] 无法读取 %ls\n", zipPath.c_str()); return kExitError; }
+    if (Sha256(zip) != sha) { Out("[!] 压缩包与指定的 SHA-256 不符，未作任何更改\n"); return kExitError; }
     const wstring root = StageRoot(here);
     RemoveTree(root + L"\\staged"); RemoveTree(root + L"\\new");
     CreateDirectoryW(root.c_str(), nullptr);
     const wstring copy = root + L"\\sc-offline-" + tagW + L".zip";
-    if (!WriteAll(copy, zip)) { Out("[!] couldn't copy the zip\n"); return kExitError; }
+    if (!WriteAll(copy, zip)) { Out("[!] 无法复制压缩包\n"); return kExitError; }
     const bool staged = StageZip(root, copy, tag);
     DeleteFileW(copy.c_str());
     if (!staged) { RemoveTree(root + L"\\staged"); RemoveTree(root + L"\\new"); return kExitError; }
@@ -1154,7 +1155,7 @@ static void Relaunch(const wstring& here) {
     STARTUPINFOW si{}; si.cb = sizeof(si);
     PROCESS_INFORMATION pi{};
     if (!CreateProcessW(exe.c_str(), cmd.data(), nullptr, nullptr, FALSE, 0, nullptr, here.c_str(), &si, &pi)) {
-        Out("[!] couldn't start the new launcher (error %lu); run sc-offline.exe again\n", GetLastError());
+        Out("[!] 无法启动新版启动器（错误 %lu），请重新运行 sc-offline.exe\n", GetLastError());
         PauseIfOwnConsole();
         ExitProcess(kExitError);
     }
@@ -1330,18 +1331,18 @@ static bool AskYes(const char* question) {
 
 static void OfferToCleanLogs(const wstring& channelDir, ULONGLONG since) {
     const std::vector<wstring> files = SessionLogs(channelDir, since);
-    if (files.empty()) { Out("Logs:     the game wrote no logs this session\n"); return; }
-    Out("\nThe game wrote these logs during this modded session:\n");
+    if (files.empty()) { Out("日志：    本次游戏未写入日志\n"); return; }
+    Out("\n本次使用模组时，游戏生成了以下日志：\n");
     for (const wstring& f : files) Out("    %ls\n", f.c_str());
-    Out("Deleting them removes the record of this session from your game folder. Keep Game.log if you\n"
-        "want to report a bug. Older logs are not touched. (clean_logs = off in sc-offline.ini skips this.)\n");
-    if (!AskYes("Delete these files?")) { Out("Logs:     kept\n"); return; }
-    if (!AskYes("Are you sure? They can't be recovered.")) { Out("Logs:     kept\n"); return; }
+    Out("删除后，游戏目录将不再保留这些本次游玩记录。如果需要报告问题，\n"
+        "请保留 Game.log。不会删除旧日志。（sc-offline.ini 中 clean_logs = off 可跳过此步骤。）\n");
+    if (!AskYes("删除这些文件吗？")) { Out("日志：    已保留\n"); return; }
+    if (!AskYes("确定删除吗？这些文件将无法恢复。")) { Out("日志：    已保留\n"); return; }
     int gone = 0, failed = 0, denied = 0;
     for (const wstring& f : files) {
         if (DeleteFileW(f.c_str())) ++gone;
         else if (GetLastError() == ERROR_ACCESS_DENIED) ++denied;
-        else { ++failed; Out("[!] couldn't delete %ls (error %lu)\n", f.c_str(), GetLastError()); }
+        else { ++failed; Out("[!] 无法删除 %ls（错误 %lu）\n", f.c_str(), GetLastError()); }
     }
     if (denied) {
         // Issue #16: the game folder needs administrator rights. One UAC prompt; the elevated run
@@ -1359,7 +1360,7 @@ static void OfferToCleanLogs(const wstring& channelDir, ULONGLONG since) {
         if (code == 0 && left == 0) gone += denied;
         else { failed += (int)left; Out("[!] %zu file%s still there (administrator rights refused?)\n", left, left == 1 ? "" : "s"); }
     }
-    Out("Logs:     deleted %d file%s%s\n", gone, gone == 1 ? "" : "s", failed ? "; see above for the rest" : "");
+    Out("Logs:     deleted %d file%s%s\n", gone, gone == 1 ? "" : "s", failed ? "；其余文件见上文" : "");
 }
 
 // --delete-logs <channel folder> <since>: the elevated half of OfferToCleanLogs. Only acts on a
@@ -1410,7 +1411,7 @@ static void FromRemembered(const wstring& here, const wstring& channel, std::vec
     if (!ReadAll(RememberedPathFile(here), bytes)) return;
     wstring w(bytes.size(), L'\0');
     w.resize(MultiByteToWideChar(CP_UTF8, 0, bytes.data(), (int)bytes.size(), w.data(), (int)w.size()));
-    AddFound(out, ToBin64(Trim(w), channel), "remembered from your last run");
+    AddFound(out, ToBin64(Trim(w), channel), "来自上次使用的目录");
 }
 
 // HKLM/HKCU ...\Uninstall\*: the RSI Launcher's InstallLocation is usually
@@ -1441,7 +1442,7 @@ static void FromUninstallKeys(const wstring& channel, std::vector<Found>& out) {
                 const size_t cut = l.find_last_of(L"\\/");
                 if (cut != wstring::npos) bin = ToBin64(l.substr(0, cut), channel);
             }
-            AddFound(out, bin, "from the RSI Launcher's install entry");
+            AddFound(out, bin, "来自 RSI 启动器的安装记录");
         }
         RegCloseKey(h);
     }
@@ -1471,7 +1472,7 @@ static void PathsInText(const std::string& text, const wstring& channel, std::ve
         i = e; ++tried;
         wstring w(clean.size(), L'\0');
         w.resize(MultiByteToWideChar(CP_UTF8, 0, clean.data(), (int)clean.size(), w.data(), (int)w.size()));
-        AddFound(out, ResolveUpward(w, channel), "from the RSI Launcher's settings or logs");
+        AddFound(out, ResolveUpward(w, channel), "来自 RSI 启动器的设置或日志");
     }
 }
 
@@ -1522,7 +1523,7 @@ static void FromUsualFolders(const wstring& channel, std::vector<Found>& out) {
         L"Game\\Star Citizen",
     };
     for (const wstring& root : FixedDrives())
-        for (const wchar_t* b : kBases) AddFound(out, ToBin64(root + b, channel), "in a usual install folder");
+        for (const wchar_t* b : kBases) AddFound(out, ToBin64(root + b, channel), "来自常见安装目录");
 }
 
 // Breadth-first over every fixed drive, a few folders deep, skipping system folders and
@@ -1538,7 +1539,7 @@ static void FromDriveSearch(const wstring& channel, std::vector<Found>& out) {
         for (size_t qi = 0; qi < queue.size() && budget > 0; ++qi) {
             const wstring dir = queue[qi].first; const int depth = queue[qi].second;
             if (depth && IsFile(dir + L"\\" + channel + L"\\Bin64\\" + kGameExe)) {
-                AddFound(out, dir + L"\\" + channel + L"\\Bin64", "by searching your drives");
+                AddFound(out, dir + L"\\" + channel + L"\\Bin64", "通过搜索磁盘找到");
                 continue;
             }
             if (depth >= kMaxDepth) continue;
@@ -1570,7 +1571,7 @@ static wstring PickFolder() {
         DWORD opts = 0;
         dlg->GetOptions(&opts);
         dlg->SetOptions(opts | FOS_PICKFOLDERS | FOS_FORCEFILESYSTEM | FOS_PATHMUSTEXIST);
-        dlg->SetTitle(L"sc-offline: pick your StarCitizen folder (the one with LIVE in it)");
+        dlg->SetTitle(L"sc-offline：请选择 StarCitizen 目录（包含 LIVE 的文件夹）");
         IShellItem* item = nullptr;
         if (SUCCEEDED(dlg->Show(GuiChild() ? nullptr : GetConsoleWindow())) && SUCCEEDED(dlg->GetResult(&item))) {
             PWSTR path = nullptr;
@@ -1596,7 +1597,7 @@ static std::vector<Found> DetectBin64(const wstring& here, const wstring& channe
     FromRsiLauncherFiles(channel, found);
     FromUsualFolders(channel, found);
     if (found.empty()) {
-        Out("[i] searching your drives for StarCitizen\\%ls\\Bin64 (a few seconds)...\n", channel.c_str());
+        Out("[i] 正在磁盘中搜索 StarCitizen\\%ls\\Bin64（需要几秒钟）……\n", channel.c_str());
         FromDriveSearch(channel, found);
     }
     return found;
@@ -1669,9 +1670,9 @@ static DllInfo Identify(const wstring& path) {
         d.version = bytes.substr(v + skip, e - v - skip);
         d.what = "sc-offline " + d.version;
     } else if (d.sha == kPrebuiltSha256) {
-        d.what = "the original author's prebuilt DLL";
+        d.what = "原作者的预编译 DLL";
     } else {
-        d.what = d.ours ? "unknown sc-offline build" : "not sc-offline";
+        d.what = d.ours ? "未知 sc-offline 版本" : "不是 sc-offline";
     }
     return d;
 }
@@ -1696,7 +1697,7 @@ static bool Step(bool dry, const char* fmt, ...) {
     char buf[1024];
     std::vsnprintf(buf, sizeof(buf), fmt, a);
     va_end(a);
-    Out("%s %s\n", dry ? "[dry-run] would" : "[+]", buf);
+    Out("%s %s\n", dry ? "[模拟运行] 将" : "[+]", buf);
     return !dry;
 }
 
@@ -1714,37 +1715,37 @@ static int PutMod(const wstring& here, const GamePaths& g, const char* mode, boo
             if (IsFile(g.xmlBackup)) xmlState = "backup";
             else if (IsFile(g.xml)) {
                 xmlState = "backup";
-                if (Step(dry, "back up your default_1.xml to %ls", g.xmlBackup.c_str()) &&
+                if (Step(dry, "备份 default_1.xml 到 %ls", g.xmlBackup.c_str()) &&
                     !CopyFileW(g.xml.c_str(), g.xmlBackup.c_str(), TRUE)) {
-                    Out("[!] couldn't back up %ls (error %lu)\n", g.xml.c_str(), GetLastError());
+                    Out("[!] 无法备份 %ls（错误 %lu）\n", g.xml.c_str(), GetLastError());
                     return 2;
                 }
             } else xmlState = "none";
         }
-        if (Step(dry, "copy data\\OfflineDB\\default_1.xml to %ls", g.xml.c_str())) {
+        if (Step(dry, "复制 data\\OfflineDB\\default_1.xml 到 %ls", g.xml.c_str())) {
             SHCreateDirectoryExW(nullptr, g.userDir.c_str(), nullptr);   // ERROR_ALREADY_EXISTS is fine
             if (!CopyFileW(xmlSrc.c_str(), g.xml.c_str(), FALSE)) {
-                Out("[!] couldn't copy default_1.xml to %ls (error %lu)\n", g.xml.c_str(), GetLastError());
+                Out("[!] 无法复制 default_1.xml 到 %ls（错误 %lu）\n", g.xml.c_str(), GetLastError());
                 return 2;
             }
         }
     } else {
-        Out("[i] data\\OfflineDB\\default_1.xml is missing; the game's own player data is used\n");
+        Out("[i] 缺少 data\\OfflineDB\\default_1.xml，将使用游戏原有的玩家数据\n");
         if (xmlState.empty()) xmlState = "skip";
     }
 
     if (IsFile(g.dll) && !leftover && !Identify(g.dll).ours) {
         if (IsFile(g.dllBackup))
-            return Out("[!] %ls belongs to another mod and %ls already exists; move one of them away first\n",
+            return Out("[!] %ls 属于其他模组，且 %ls 已存在；请先移走其中一个\n",
                        g.dll.c_str(), g.dllBackup.c_str()), 2;
-        if (Step(dry, "set aside the other mod's dinput8.dll as %ls", g.dllBackup.c_str()) &&
+        if (Step(dry, "将其他模组的 dinput8.dll 备份为 %ls", g.dllBackup.c_str()) &&
             !MoveFileExW(g.dll.c_str(), g.dllBackup.c_str(), 0)) {
-            Out("[!] couldn't rename %ls (error %lu)\n", g.dll.c_str(), GetLastError());
+            Out("[!] 无法重命名 %ls（错误 %lu）\n", g.dll.c_str(), GetLastError());
             return 2;
         }
     }
-    if (Step(dry, "copy dinput8.dll to %ls", g.dll.c_str()) && !CopyFileW(dllSrc.c_str(), g.dll.c_str(), FALSE)) {
-        Out("[!] couldn't copy dinput8.dll to %ls (error %lu)\n", g.dll.c_str(), GetLastError());
+    if (Step(dry, "复制 dinput8.dll 到 %ls", g.dll.c_str()) && !CopyFileW(dllSrc.c_str(), g.dll.c_str(), FALSE)) {
+        Out("[!] 无法复制 dinput8.dll 到 %ls（错误 %lu）\n", g.dll.c_str(), GetLastError());
         return 2;
     }
 
@@ -1755,8 +1756,8 @@ static int PutMod(const wstring& here, const GamePaths& g, const char* mode, boo
     const DllInfo mod = Identify(dllSrc);
     const std::string marker = std::string("version=") + (mod.version.empty() ? mod.what : mod.version) +
                                "\nsha256=" + mod.sha + "\nmode=" + mode + "\ntime=" + when + "\nxml=" + xmlState + "\n";
-    if (Step(dry, "write %ls", g.marker.c_str()) && !WriteAll(g.marker, marker))
-        Out("[!] couldn't write %ls (error %lu); uninstall still works, but can't tell whether default_1.xml was yours\n",
+    if (Step(dry, "写入 %ls", g.marker.c_str()) && !WriteAll(g.marker, marker))
+        Out("[!] 无法写入 %ls（错误 %lu）；仍可卸载，但无法判断 default_1.xml 原先是否属于你\n",
             g.marker.c_str(), GetLastError());
     return 0;
 }
@@ -1770,35 +1771,35 @@ static int TakeMod(const GamePaths& g, bool dry) {
 
     if (IsFile(g.dll)) {
         if (haveMarker || Identify(g.dll).ours) {
-            if (Step(dry, "delete %ls", g.dll.c_str())) {
+            if (Step(dry, "删除 %ls", g.dll.c_str())) {
                 bool gone = false;
                 for (int tries = 0; tries < 30 && !gone; ++tries) {
                     gone = DeleteFileW(g.dll.c_str()) || GetLastError() == ERROR_FILE_NOT_FOUND;
                     if (!gone) Sleep(1000);
                 }
-                if (!gone) { Out("[!] couldn't delete %ls (error %lu)\n", g.dll.c_str(), GetLastError()); rc = 3; }
+                if (!gone) { Out("[!] 无法删除 %ls（错误 %lu）\n", g.dll.c_str(), GetLastError()); rc = 3; }
             }
         } else {
-            Out("[i] %ls isn't sc-offline's; left alone\n", g.dll.c_str());
+            Out("[i] %ls 不属于 sc-offline，已保留\n", g.dll.c_str());
         }
     }
     if (rc == 0 && IsFile(g.dllBackup) && (dry || !IsFile(g.dll)) &&
-        Step(dry, "put the other mod's dinput8.dll back") && !MoveFileExW(g.dllBackup.c_str(), g.dll.c_str(), 0))
-        Out("[!] couldn't restore %ls (error %lu)\n", g.dllBackup.c_str(), GetLastError());
+        Step(dry, "还原其他模组的 dinput8.dll") && !MoveFileExW(g.dllBackup.c_str(), g.dll.c_str(), 0))
+        Out("[!] 无法还原 %ls（错误 %lu）\n", g.dllBackup.c_str(), GetLastError());
 
     if (IsFile(g.xmlBackup) && (xmlState == "backup" || !haveMarker)) {
-        if (Step(dry, "restore your default_1.xml from %ls", g.xmlBackup.c_str()) &&
+        if (Step(dry, "从 %ls 还原 default_1.xml", g.xmlBackup.c_str()) &&
             !MoveFileExW(g.xmlBackup.c_str(), g.xml.c_str(), MOVEFILE_REPLACE_EXISTING))
-            Out("[!] couldn't restore %ls (error %lu)\n", g.xmlBackup.c_str(), GetLastError());
+            Out("[!] 无法还原 %ls（错误 %lu）\n", g.xmlBackup.c_str(), GetLastError());
     } else if (xmlState == "none" && IsFile(g.xml)) {
-        if (Step(dry, "delete %ls (there was none before sc-offline)", g.xml.c_str()) && !DeleteFileW(g.xml.c_str()))
-            Out("[!] couldn't delete %ls (error %lu)\n", g.xml.c_str(), GetLastError());
+        if (Step(dry, "删除 %ls（安装 sc-offline 前不存在此文件）", g.xml.c_str()) && !DeleteFileW(g.xml.c_str()))
+            Out("[!] 无法删除 %ls（错误 %lu）\n", g.xml.c_str(), GetLastError());
     } else if (!haveMarker && IsFile(g.xml)) {
-        Out("[i] left %ls in place: an older sc-offline may have put it there, but there's no record of it\n", g.xml.c_str());
+        Out("[i] 已保留 %ls：可能由旧版 sc-offline 写入，但没有相关记录\n", g.xml.c_str());
     }
 
-    if (haveMarker && rc == 0 && Step(dry, "delete %ls", g.marker.c_str()) && !DeleteFileW(g.marker.c_str()))
-        Out("[!] couldn't delete %ls (error %lu)\n", g.marker.c_str(), GetLastError());
+    if (haveMarker && rc == 0 && Step(dry, "删除 %ls", g.marker.c_str()) && !DeleteFileW(g.marker.c_str()))
+        Out("[!] 无法删除 %ls（错误 %lu）\n", g.marker.c_str(), GetLastError());
     return rc;
 }
 
@@ -1880,10 +1881,10 @@ static void OfferCrashReport(const wstring& here, const wstring& channelDir, ULO
     int dumps = 0;
     for (const wstring& f : crash) if (!IsTextReport(f)) ++dumps;
     Out("\n[!] the game crashed this session (%zu file%s in %ls\\Crashes).\n", crash.size(), crash.size() == 1 ? "" : "s", channelDir.c_str());
-    Out("    A crash report zips mod.log, launcher.log, Game.log and the crash text files into data\\crash-reports,\n"
-        "    with your RSI handle, account numbers and Windows user name replaced. Nothing is sent: you attach\n"
-        "    the zip to the bug form yourself.%s\n", dumps ? " Memory dumps (.dmp) are left out; they can't be redacted." : "");
-    if (!AskYes("Make a crash report?")) { Out("Crash:    no report made\n"); return; }
+    Out("    崩溃报告会将 mod.log、launcher.log、Game.log 和崩溃文本打包到 data\\crash-reports，\n"
+        "    并替换其中的 RSI 昵称、账号编号和 Windows 用户名。不会自动发送；你可以自行将\n"
+        "    压缩包附到问题反馈表中。%s\n", dumps ? " 不包含内存转储（.dmp），因为无法对其脱敏。" : "");
+    if (!AskYes("生成崩溃报告吗？")) { Out("崩溃：    未生成报告\n"); return; }
 
     struct Item { wstring src; wstring name; };
     std::vector<Item> items = { { here + L"\\data\\mod.log", L"mod.log" }, { here + L"\\data\\launcher.log", L"launcher.log" },
@@ -1914,8 +1915,8 @@ static void OfferCrashReport(const wstring& here, const wstring& channelDir, ULO
         if (texts[i].empty()) continue;
         if (WriteAll(stage + L"\\" + items[i].name, Redact(texts[i], handles, user))) ++put;
     }
-    WriteAll(stage + L"\\README.txt", std::string("sc-offline ") + SCO_VERSION + " crash report\r\nGame: " + gameBuild +
-             "\r\nRedacted: RSI handle -> <handle>, account/GEID numbers -> <id>, Windows user name -> <user>.\r\n");
+    WriteAll(stage + L"\\README.txt", std::string("sc-offline ") + SCO_VERSION + " 崩溃报告\r\n游戏：" + gameBuild +
+             "\r\n已脱敏：RSI 昵称 -> <handle>，账号/GEID 编号 -> <id>，Windows 用户名 -> <user>。\r\n");
     wchar_t sys[MAX_PATH]; GetSystemDirectoryW(sys, MAX_PATH);
     const wstring tar = wstring(sys) + L"\\tar.exe";
     DWORD code = 1;
@@ -1923,9 +1924,9 @@ static void OfferCrashReport(const wstring& here, const wstring& channelDir, ULO
     if (zipped) RemoveTree(stage);
     const wstring made = zipped ? zip : stage;
     Out("Crash:    report saved: %ls (%d file%s%s)\n", made.c_str(), put, put == 1 ? "" : "s",
-        zipped ? "" : "; tar.exe failed, so it is a folder - zip it yourself");
-    Out("          Look through it before you share it: the redaction covers handle, IDs and user name only.\n");
-    if (!AskYes("Open the bug form in your browser (you attach the zip there)?")) return;
+        zipped ? "" : "；tar.exe 执行失败，报告以文件夹保存，请自行压缩");
+    Out("          分享前请检查内容：脱敏仅覆盖昵称、ID 和用户名。\n");
+    if (!AskYes("在浏览器中打开问题反馈表吗（需自行附上压缩包）？")) return;
     const std::string url = "https://github.com/scubamount/sc-offline/issues/new?template=bug.yml&title=" +
         UrlEncode("Crash: ") + "&version=" + UrlEncode(SCO_VERSION) + "&game=" + UrlEncode(gameBuild) +
         "&os=" + UrlEncode(OnWine() ? "Linux (Wine/Proton)" : "Windows");
@@ -2109,9 +2110,9 @@ static std::string PcChangesLeft() {
 
 static void DescribePcChanges(const std::string& rec) {
     for (const FwRule& r : kFwRules)
-        if (Field(rec, r.key) == "added") Out("          - firewall rule \"%ls\"\n", r.name);
-    if (Field(rec, "hosts") == "added")    Out("          - hosts line for %s\n", kEacHost);
-    if (Field(rec, "eac") == "renamed")    Out("          - EasyAntiCheat_EOS.exe renamed to .bak\n");
+        if (Field(rec, r.key) == "added") Out("          - 防火墙规则“%ls”\n", r.name);
+    if (Field(rec, "hosts") == "added")    Out("          - %s 的 hosts 条目\n", kEacHost);
+    if (Field(rec, "eac") == "renamed")    Out("          - EasyAntiCheat_EOS.exe 已重命名为 .bak\n");
 }
 
 // Undoes what the record says this launcher did, then deletes the record. 0 ok, 5 something stayed.
@@ -2120,19 +2121,19 @@ static int UndoPcChanges(bool dry) {
     if (rec.empty()) return 0;
     int rc = 0;
     for (const FwRule& r : kFwRules) {
-        if (Field(rec, r.key) == "added" && Step(dry, "remove the firewall rule \"%ls\"", r.name) &&
+        if (Field(rec, r.key) == "added" && Step(dry, "移除防火墙规则“%ls”", r.name) &&
             !DeleteFirewallRule(r.name) && FirewallRuleExists(r.name)) {
-            Out("[!] couldn't remove the firewall rule; remove \"%ls\" in Windows Defender Firewall\n", r.name); rc = 5;
+            Out("[!] 无法移除防火墙规则，请在 Windows Defender 防火墙中删除“%ls”\n", r.name); rc = 5;
         }
     }
-    if (Field(rec, "hosts") == "added" && Step(dry, "remove sc-offline's line from the hosts file")) {
+    if (Field(rec, "hosts") == "added" && Step(dry, "从 hosts 文件移除 sc-offline 添加的条目")) {
         if (RemoveHostsLine()) FlushDns();
-        else { Out("[!] couldn't edit %ls (error %lu); delete the %s line by hand\n", HostsPath().c_str(), GetLastError(), kEacHost); rc = 5; }
+        else { Out("[!] 无法编辑 %ls（错误 %lu），请手动删除 %s 条目\n", HostsPath().c_str(), GetLastError(), kEacHost); rc = 5; }
     }
-    if (Field(rec, "eac") == "renamed" && Step(dry, "rename EasyAntiCheat_EOS.exe.bak back")) {
+    if (Field(rec, "eac") == "renamed" && Step(dry, "将 EasyAntiCheat_EOS.exe.bak 改回原名")) {
         const wstring exe = EacExe(), bak = exe + L".bak";
         if (IsFile(bak) && !IsFile(exe) && !MoveFileExW(bak.c_str(), exe.c_str(), 0)) {
-            Out("[!] couldn't rename %ls back (error %lu)\n", bak.c_str(), GetLastError()); rc = 5;
+            Out("[!] 无法将 %ls 改回原名（错误 %lu）\n", bak.c_str(), GetLastError()); rc = 5;
         }
     }
     if (rc == 0 && !dry) DeleteFileW(PcChangesPath().c_str());
@@ -2148,7 +2149,7 @@ static int ApplyPcChanges(const PcWanted& w, const wstring& gameExe, bool dry) {
     auto record = [&](const char* key, const char* value) {
         if (Field(rec, key) == value) return;
         rec += std::string(key) + "=" + value + "\n";
-        if (!WriteAll(PcChangesPath(), rec)) Out("[!] couldn't write %ls (error %lu)\n", PcChangesPath().c_str(), GetLastError());
+        if (!WriteAll(PcChangesPath(), rec)) Out("[!] 无法写入 %ls（错误 %lu）\n", PcChangesPath().c_str(), GetLastError());
     };
     if (!dry && rec.find("time=") == std::string::npos) {
         SYSTEMTIME t; GetLocalTime(&t);
@@ -2161,45 +2162,45 @@ static int ApplyPcChanges(const PcWanted& w, const wstring& gameExe, bool dry) {
         const wstring exes[] = { gameExe, RsiLauncherExe(bin), CrashHandlerExe(bin) };
         std::vector<Ipv4Range> allow;
         wstring allowText;
-        if (w.lan && !ParseAllowList(w.allow, allow, allowText)) { Out("[!] multiplayer_allow ignored (not a list of IPv4 ranges)\n"); allow.clear(); allowText.clear(); }
+        if (w.lan && !ParseAllowList(w.allow, allow, allowText)) { Out("[!] 已忽略 multiplayer_allow（不是有效的 IPv4 网段列表）\n"); allow.clear(); allowText.clear(); }
         for (size_t i = 0; i < ARRAYSIZE(exes); ++i) {   // kFwRules' first three: the block rules
             const FwRule& r = kFwRules[i];
-            if (exes[i].empty()) { if (i == 1) Out("[i] RSI Launcher.exe not found; not blocking it\n"); continue; }
-            if (Field(rec, r.key) == "added" && !dry && FirewallRuleExists(r.name)) Out("[i] firewall rule \"%ls\" already in place\n", r.name);
-            else if (Step(dry, "add a firewall rule blocking %ls", exes[i].c_str())) {
+            if (exes[i].empty()) { if (i == 1) Out("[i] 未找到 RSI Launcher.exe，不设置其网络阻止规则\n"); continue; }
+            if (Field(rec, r.key) == "added" && !dry && FirewallRuleExists(r.name)) Out("[i] 防火墙规则“%ls”已存在\n", r.name);
+            else if (Step(dry, "添加阻止 %ls 联网的防火墙规则", exes[i].c_str())) {
                 const wstring remote = i == 0 && w.lan ? BlockedOutsideLan(allow) : L"";
                 bool added = AddFirewallRule(r.name, exes[i], remote);
                 if (!added && !remote.empty()) {   // fail closed: block every address, as without multiplayer
                     DeleteFirewallRule(r.name);
-                    Out("[!] couldn't leave your LAN open in the firewall rule; blocking every address (multiplayer can't reach other PCs)\n");
+                    Out("[!] 防火墙规则无法保留局域网访问，已阻止所有地址（联机功能无法访问其他电脑）\n");
                     added = AddFirewallRule(r.name, exes[i]);
                 }
-                if (!added) { Out("[!] couldn't add the firewall rule (netsh failed)\n"); DeleteFirewallRule(r.name); return 5; }
+                if (!added) { Out("[!] 无法添加防火墙规则（netsh 执行失败）\n"); DeleteFirewallRule(r.name); return 5; }
                 record(r.key, "added");
             }
         }
         if (w.lan) {
-            if (Field(rec, "fw_mp") == "added" && !dry && FirewallRuleExists(kMpRule)) Out("[i] firewall rule \"%ls\" already in place\n", kMpRule);
-            else if (Step(dry, "add a firewall rule letting your LAN%ls reach %ls over UDP (multiplayer)", allowText.empty() ? L"" : L" and multiplayer_allow", gameExe.c_str())) {
+            if (Field(rec, "fw_mp") == "added" && !dry && FirewallRuleExists(kMpRule)) Out("[i] 防火墙规则“%ls”已存在\n", kMpRule);
+            else if (Step(dry, "添加防火墙规则，允许局域网%ls通过 UDP 访问 %ls（联机）", allowText.empty() ? L"" : L"及 multiplayer_allow ", gameExe.c_str())) {
                 if (AddMultiplayerRule(gameExe, allowText)) record("fw_mp", "added");
-                else { DeleteFirewallRule(kMpRule); Out("[!] couldn't add the multiplayer firewall rule; a session you host may not be reachable\n"); }
+                else { DeleteFirewallRule(kMpRule); Out("[!] 无法添加联机防火墙规则，其他玩家可能无法加入你的房间\n"); }
             }
         }
     }
     if (w.eacHosts) {
-        if (HostsBlocksEac()) Out("[i] hosts file already blocks %s\n", kEacHost);
-        else if (Step(dry, "add `127.0.0.1 %s` to the hosts file", kEacHost)) {
-            if (!AddHostsLine()) { Out("[!] couldn't edit %ls (error %lu); antivirus may protect it\n", HostsPath().c_str(), GetLastError()); return 5; }
+        if (HostsBlocksEac()) Out("[i] hosts 文件已阻止 %s\n", kEacHost);
+        else if (Step(dry, "向 hosts 文件添加“127.0.0.1 %s”", kEacHost)) {
+            if (!AddHostsLine()) { Out("[!] 无法编辑 %ls（错误 %lu），文件可能受杀毒软件保护\n", HostsPath().c_str(), GetLastError()); return 5; }
             record("hosts", "added");
             FlushDns();
         }
     }
     if (w.eacRename) {
         const wstring exe = EacExe(), bak = exe + L".bak";
-        if (!IsFile(exe)) Out("[i] Easy Anti-Cheat is already off or not installed\n");
-        else if (Step(dry, "rename EasyAntiCheat_EOS.exe to .bak")) {
+        if (!IsFile(exe)) Out("[i] Easy Anti-Cheat 已关闭或未安装\n");
+        else if (Step(dry, "将 EasyAntiCheat_EOS.exe 重命名为 .bak")) {
             if (!MoveFileExW(exe.c_str(), bak.c_str(), MOVEFILE_REPLACE_EXISTING)) {
-                Out("[!] couldn't rename %ls (error %lu)\n", exe.c_str(), GetLastError()); return 5;
+                Out("[!] 无法重命名 %ls（错误 %lu）\n", exe.c_str(), GetLastError()); return 5;
             }
             record("eac", "renamed");
         }
@@ -2267,7 +2268,7 @@ static int Helper(const wstring& op, const wstring& bin, DWORD parentPid, const 
     const int taken = TakeMod(g, false);
     const bool hadPc = !PcChangesLeft().empty();
     const int undone = UndoPcChanges(false);
-    if (hadPc && undone == 0) Out("[+] PC changes undone\n");
+    if (hadPc && undone == 0) Out("[+] 系统设置已还原\n");
     return taken ? taken : undone;
 }
 
@@ -2317,16 +2318,16 @@ static bool StartGame(const wstring& exe, wstring& cmd, const wstring& dir, PROC
     if (shellToken) CloseHandle(shellToken);
     if (shellProc) CloseHandle(shellProc);
     if (started) {
-        Out("[i] sc-offline was started as administrator; the game was started with normal rights anyway\n"
-            "    (as administrator, Windows lets overlay layers such as OBS into the game, and they can crash it).\n");
+        Out("[i] sc-offline 以管理员身份运行；游戏仍使用普通权限启动\n"
+            "    （管理员模式下，Windows 允许 OBS 等叠加层进入游戏，可能导致崩溃。）\n");
         return true;
     }
     if (shellElevated)
-        Out("[!] Windows' User Account Control is off, so everything, the game included, runs as administrator.\n"
-            "    Overlay layers (OBS, Steam) then load into the game and can crash it; close OBS before playing.\n");
+        Out("[!] Windows 用户账户控制已关闭，所有程序（包括游戏）都以管理员身份运行。\n"
+            "    OBS、Steam 等叠加层可能进入游戏并导致崩溃，请在游玩前关闭 OBS。\n");
     else
-        Out("[!] sc-offline was started as administrator and couldn't start the game with normal rights (error %lu);\n"
-            "    it starts as administrator. If it crashes while loading, start sc-offline.exe normally.\n", err);
+        Out("[!] sc-offline 以管理员身份运行，无法以普通权限启动游戏（错误 %lu）；\n"
+            "    游戏将以管理员身份启动。若加载时崩溃，请以普通方式运行 sc-offline.exe。\n", err);
     return plain();
 }
 
@@ -2352,12 +2353,12 @@ static HANDLE StartHelper(const wchar_t* op, const GamePaths& g, const wstring& 
         return pi.hProcess;
     }
     if (pcChanges)
-        Out("[i] Windows will ask for administrator rights once: the helper blocks the game's network and\n"
-            "    turns Easy Anti-Cheat off while you play, and undoes both when the game closes.\n"
-            "    Only the helper runs as administrator, not the game.\n");
+        Out("[i] Windows 将请求一次管理员授权：辅助进程会阻止游戏联网，\n"
+            "    并在游玩期间关闭 Easy Anti-Cheat，游戏退出后还原。\n"
+            "    仅辅助进程使用管理员权限，游戏不使用。\n");
     else
-        Out("[i] the game folder needs administrator rights for the mod; Windows will ask once.\n"
-            "    Only the copy/remove helper runs as administrator, not the game.\n");
+        Out("[i] 在游戏目录安装模组需要管理员权限，Windows 将请求一次授权。\n"
+            "    仅负责复制和移除文件的辅助进程使用管理员权限，游戏不使用。\n");
     SHELLEXECUTEINFOW sei{};
     sei.cbSize = sizeof(sei);
     sei.fMask = SEE_MASK_NOCLOSEPROCESS;
@@ -2372,7 +2373,7 @@ static HANDLE StartHelper(const wchar_t* op, const GamePaths& g, const wstring& 
 // Ctrl+C would kill only this window; the helper still cleans up, but say so instead of dying.
 static BOOL WINAPI OnCtrl(DWORD type) {
     if (type == CTRL_C_EVENT || type == CTRL_BREAK_EVENT) {
-        std::printf("\n[i] Ctrl+C ignored: close the game instead. The mod is removed when it exits.\n");
+        std::printf("\n[i] 已忽略 Ctrl+C，请关闭游戏。游戏退出时会移除模组。\n");
         return TRUE;
     }
     return FALSE;   // window closed / logoff: let it go; the helper removes the mod
@@ -2388,13 +2389,13 @@ static CheckResult SelfChecks(const wstring& here, const Config& cfg, const Game
     CheckResult r;
     // 1. The DLL this launcher would copy in.
     const DllInfo mod = Identify(here + L"\\dinput8.dll");
-    if (!mod.present) Out("Mod DLL:  missing (dinput8.dll next to sc-offline.exe)\n");
+    if (!mod.present) Out("模组 DLL：缺失（应位于 sc-offline.exe 旁的 dinput8.dll）\n");
     else {
-        Out("Mod DLL:  %s\n          sha256 %s\n", mod.what.c_str(), mod.sha.c_str());
+        Out("模组 DLL：%s\n          sha256 %s\n", mod.what.c_str(), mod.sha.c_str());
         if (mod.sha == kPrebuiltSha256 && _wcsicmp(cfg.bootMap.c_str(), L"PU"))
-            Out("[!] the prebuilt DLL only knows boot_map = PU; set that in sc-offline.ini (now %ls)\n", cfg.bootMap.c_str());
+            Out("[!] 此预编译 DLL 仅支持 boot_map = PU，请修改 sc-offline.ini（当前为 %ls）\n", cfg.bootMap.c_str());
         if (!mod.version.empty() && mod.version != SCO_VERSION)
-            Out("[i] this launcher is %s; the DLL is %s\n", SCO_VERSION, mod.version.c_str());
+            Out("[i] 启动器版本为 %s；DLL 版本为 %s\n", SCO_VERSION, mod.version.c_str());
     }
 
     // 2. The game build, against the one recorded after the last play.
@@ -2402,57 +2403,57 @@ static CheckResult SelfChecks(const wstring& here, const Config& cfg, const Game
     std::string last;
     ReadAll(here + L"\\data\\game-build.txt", last);
     while (!last.empty() && (last.back() == '\n' || last.back() == '\r')) last.pop_back();
-    Out("Game:     %s\n", r.gameBuild.empty() ? "(version unknown)" : r.gameBuild.c_str());
+    Out("游戏：    %s\n", r.gameBuild.empty() ? "（版本未知）" : r.gameBuild.c_str());
     if (!last.empty() && !r.gameBuild.empty() && last != r.gameBuild)
-        Out("[!] the game updated since you last played (was %s).\n"
-            "    If the mod misbehaves, check for a newer sc-offline release.\n", last.c_str());
+        Out("[!] 游戏在上次游玩后已更新（原版本为 %s）。\n"
+            "    如果模组运行异常，请检查是否有新版 sc-offline。\n", last.c_str());
 
     // 3. What is in the game folder now.
     std::string marker;
     const bool haveMarker = ReadAll(g.marker, marker);
     const DllInfo inGame = Identify(g.dll);
-    if (!inGame.present) Out("Installed: no (Bin64 has no dinput8.dll)\n");
+    if (!inGame.present) Out("安装状态：未安装（Bin64 中没有 dinput8.dll）\n");
     else if (haveMarker || inGame.ours)
-        Out("Installed: yes, %s%s%s\n", inGame.what.c_str(), haveMarker ? ", since " : "",
+        Out("安装状态：已安装，%s%s%s\n", inGame.what.c_str(), haveMarker ? "，安装于 " : "",
             haveMarker ? Field(marker, "time").c_str() : "");
-    else Out("Installed: no; Bin64 has another mod's dinput8.dll (it is set aside while you play)\n");
+    else Out("安装状态：未安装；Bin64 中存在其他模组的 dinput8.dll（游玩时会临时备份）\n");
     if ((haveMarker || inGame.ours) && inGame.present && !GameRunning())
-        Out("[!] the mod is still in the game folder (a crash, or `install`).\n"
-            "    Run `sc-offline.exe uninstall` before going online.\n");
+        Out("[!] 模组仍在游戏目录中（可能因崩溃或执行过 install）。\n"
+            "    进入在线模式前请运行 sc-offline.exe uninstall。\n");
 
     // 4. What sc-offline changed on the PC, if a previous run didn't get to undo it (a crash).
     const std::string pcLeft = PcChangesLeft();
     if (!pcLeft.empty()) {
         r.pcLeftover = true;
-        Out("[!] PC changes from a previous run (%s) are still in place:\n", Field(pcLeft, "time").c_str());
+        Out("[!] 上次运行（%s）的系统设置更改仍然存在：\n", Field(pcLeft, "time").c_str());
         DescribePcChanges(pcLeft);
-        if (!GameRunning()) Out("    Run `sc-offline.exe uninstall` to undo them before going online.\n");
+        if (!GameRunning()) Out("    进入在线模式前请运行 sc-offline.exe uninstall 还原这些更改。\n");
     }
-    if (!OnWine()) Out("Network:  %s%s\n", cfg.firewall ? "blocked for StarCitizen.exe, RSI Launcher.exe and CrashHandler.exe while you play (block_network)"
-                                                         : "NOT blocked (block_network = off)",
-                       cfg.firewall && cfg.multiplayer ? "; your LAN stays reachable for the Multiplayer tab (multiplayer)" : "");
+    if (!OnWine()) Out("网络：    %s%s\n", cfg.firewall ? "游玩期间阻止 StarCitizen.exe、RSI Launcher.exe 和 CrashHandler.exe 联网（block_network）"
+                                                         : "未阻止联网（block_network = off）",
+                       cfg.firewall && cfg.multiplayer ? "；局域网保持可访问，以供“联机”页面使用（multiplayer）" : "");
 
     // 5. Easy Anti-Cheat.
     const Eac eac = EacState();
-    Out("EAC:      %s\n", eac == Eac::Active ? "ACTIVE" : eac == Eac::Disabled ? "disabled (EasyAntiCheat_EOS.exe.bak)" : "not installed");
-    if (OnWine()) Out("Hosts:    checked by sc-offline.sh against /etc/hosts\n");
-    else Out("Hosts:    %s\n", HostsBlocksEac() ? "EAC download server blocked" : "EAC download server NOT blocked");
+    Out("EAC：     %s\n", eac == Eac::Active ? "已启用" : eac == Eac::Disabled ? "已禁用（EasyAntiCheat_EOS.exe.bak）" : "未安装");
+    if (OnWine()) Out("Hosts：   由 sc-offline.sh 检查 /etc/hosts\n");
+    else Out("Hosts：   %s\n", HostsBlocksEac() ? "已阻止 EAC 下载服务器" : "未阻止 EAC 下载服务器");
     const bool autoEac = !OnWine() && cfg.eacRename;
     r.eacActive = eac == Eac::Active;
     if (eac == Eac::Active && autoEac) {
-        Out("[i] Easy Anti-Cheat is on; `play` turns it off while you play and back on afterwards (eac_rename).\n");
+        Out("[i] Easy Anti-Cheat 已启用；play 会在游玩期间将其关闭，结束后恢复（eac_rename）。\n");
     } else if (eac == Eac::Active) {
-        Out("[!] Easy Anti-Cheat is active; the mod can't run with it. In PowerShell as administrator:\n"
+        Out("[!] Easy Anti-Cheat 已启用，模组无法与其同时运行。请在管理员 PowerShell 中执行：\n"
             "      ren \"C:\\Program Files (x86)\\EasyAntiCheat_EOS\\EasyAntiCheat_EOS.exe\" EasyAntiCheat_EOS.exe.bak\n"
-            "    and block modules-cdn.eac-prod.on.epicgames.com in your hosts file (README, Setup).\n");
+            "    并在 hosts 文件中阻止 modules-cdn.eac-prod.on.epicgames.com（详见 README 设置说明）。\n");
     } else if (!OnWine() && !cfg.eacHosts && !HostsBlocksEac()) {
-        Out("[i] add `127.0.0.1 modules-cdn.eac-prod.on.epicgames.com` to your hosts file so the RSI Launcher\n"
-            "    doesn't download Easy Anti-Cheat again (README, Setup).\n");
+        Out("[i] 请在 hosts 文件中添加“127.0.0.1 modules-cdn.eac-prod.on.epicgames.com”，以防 RSI 启动器\n"
+            "    再次下载 Easy Anti-Cheat（详见 README 设置说明）。\n");
     }
     if (OnWine()) {
         wchar_t ov[512];
         const DWORD n = GetEnvironmentVariableW(L"WINEDLLOVERRIDES", ov, ARRAYSIZE(ov));
-        Out("Wine:     yes, WINEDLLOVERRIDES=%ls\n", n && n < ARRAYSIZE(ov) ? ov : L"(not set - dinput8 needs n,b; use sc-offline.sh)");
+        Out("Wine：    是，WINEDLLOVERRIDES=%ls\n", n && n < ARRAYSIZE(ov) ? ov : L"（未设置，dinput8 需要 n,b；请使用 sc-offline.sh）");
     }
     return r;
 }
@@ -2477,11 +2478,11 @@ enum Icon { kIcoPlay, kIcoInstall, kIcoStatus, kIcoUpdate, kIcoHome, kIcoOutput,
 // The home page's list: each row runs `sc-offline.exe <cmd>` as a hidden child (see RunCommand).
 struct GuiCommand { const char* label; const wchar_t* cmd; Action act; Icon icon; };
 static const GuiCommand kGuiCommands[] = {
-    { "Play", L"play", kActPlay, kIcoPlay },
-    { "Status", L"status", kActStatus, kIcoStatus },
-    { "Update", L"update", kActUpdate, kIcoUpdate },
-    { "Install", L"install", kActInstall, kIcoInstall },
-    { "Uninstall", L"uninstall", kActUninstall, kIcoShield },
+    { "启动游戏", L"play", kActPlay, kIcoPlay },
+    { "状态", L"status", kActStatus, kIcoStatus },
+    { "更新", L"update", kActUpdate, kIcoUpdate },
+    { "安装", L"install", kActInstall, kIcoInstall },
+    { "卸载", L"uninstall", kActUninstall, kIcoShield },
 };
 static const int kGuiCommandCount = int(ARRAYSIZE(kGuiCommands));
 
@@ -2593,29 +2594,29 @@ static void RefreshLight() {
     if (!bin.empty()) {
         const GamePaths p(bin);
         const DllInfo d = Identify(p.dll);
-        if (IsFile(p.marker) || (d.present && d.ours)) left.push_back("the mod is still in Bin64");
+        if (IsFile(p.marker) || (d.present && d.ours)) left.push_back("模组仍在 Bin64 中");
     }
     const std::string pc = PcChangesLeft();
     if (!pc.empty()) {
-        for (const FwRule& r : kFwRules) if (Field(pc, r.key) == "added") left.push_back("firewall rule \"" + Narrow(r.name) + "\"");
-        if (Field(pc, "hosts") == "added") left.push_back("the EAC line in the hosts file");
-        if (Field(pc, "eac") == "renamed") left.push_back("EasyAntiCheat_EOS.exe renamed to .bak");
+        for (const FwRule& r : kFwRules) if (Field(pc, r.key) == "added") left.push_back("防火墙规则 \"" + Narrow(r.name) + "\"");
+        if (Field(pc, "hosts") == "added") left.push_back("hosts 文件中的 EAC 条目");
+        if (Field(pc, "eac") == "renamed") left.push_back("EasyAntiCheat_EOS.exe 已重命名为 .bak");
     }
     g.hasLeftovers = !left.empty();
     g.gameUp = GameRunning();
     if (g.gameUp) {
-        g.lightTitle = "Not safe to go online";
-        g.lightDetail = "Star Citizen is running. When it closes, sc-offline takes the mod out and undoes its PC changes.";
+        g.lightTitle = "暂不可进入在线模式";
+        g.lightDetail = "星际公民正在运行。游戏关闭后，sc-offline 会移除模组并还原系统设置。";
     } else if (!left.empty()) {
-        g.lightTitle = "Not safe to go online yet";
-        g.lightDetail = "Click Uninstall to undo: ";
+        g.lightTitle = "尚不可进入在线模式";
+        g.lightDetail = "点击“卸载”以还原：";
         for (size_t i = 0; i < left.size(); ++i) g.lightDetail += (i ? "; " : "") + left[i];
     } else if (bin.empty()) {
-        g.lightTitle = "Game folder not known yet";
-        g.lightDetail = "Click Status or Play to find it. No PC changes are left over.";
+        g.lightTitle = "尚未找到游戏目录";
+        g.lightDetail = "点击“状态”或“启动游戏”查找目录。当前没有遗留的系统设置更改。";
     } else {
-        g.lightTitle = "Safe to go online";
-        g.lightDetail = "The mod is out of the game folder and no PC changes are left.";
+        g.lightTitle = "可以进入在线模式";
+        g.lightDetail = "模组已从游戏目录移除，系统设置已还原。";
     }
 }
 
@@ -2696,7 +2697,7 @@ static void RunCommand(const wchar_t* cmd) {
     const BOOL ok = CreateProcessW(self, line.data(), nullptr, nullptr, TRUE, CREATE_NO_WINDOW, nullptr, g.here.c_str(), &si, &pi);
     SetEnvironmentVariableW(L"SC_OFFLINE_GUI", nullptr);
     CloseHandle(outW); CloseHandle(inR);
-    if (!ok) { CloseHandle(outR); CloseHandle(inW); AppendOutput(L"[!] couldn't start sc-offline.exe " + wstring(cmd) + L"\n"); return; }
+    if (!ok) { CloseHandle(outR); CloseHandle(inW); AppendOutput(L"[!] 无法启动 sc-offline.exe " + wstring(cmd) + L"\n"); return; }
     CloseHandle(pi.hThread);
     g.child = pi.hProcess; g.childIn = inW; g.running = cmd;
     ClearOutput();
@@ -2938,8 +2939,8 @@ static float DrawQuestion(ImVec2 at, float width) {
         at.y += ImGui::GetFontSize() + Px(10);
     }
     const float bw = (width - Px(10)) * 0.5f, bh = Px(42);
-    if (UiButton("Yes", at, ImVec2(bw, bh), kAction, true, kIcoCheck)) g.action = kActYes;
-    if (UiButton("No", ImVec2(at.x + bw + Px(10), at.y), ImVec2(bw, bh), kPlain)) g.action = kActNo;
+    if (UiButton("是", at, ImVec2(bw, bh), kAction, true, kIcoCheck)) g.action = kActYes;
+    if (UiButton("否", ImVec2(at.x + bw + Px(10), at.y), ImVec2(bw, bh), kPlain)) g.action = kActNo;
     return at.y + bh;
 }
 
@@ -3005,7 +3006,7 @@ static void DrawControls(float W) {
         if (ImGui::InvisibleButton("##discord", ImVec2(tw, s))) g.action = kActDiscord;
         const ImGuiID id = ImGui::GetID("##discord");
         const float h = Anim(id, ImGui::IsItemHovered() ? 1.0f : 0.0f), on = Anim(id + 1, g.discord ? 1.0f : 0.0f);
-        Tip("Show \"Playing sc-offline\" on your Discord profile from the next Play");
+        Tip("下次启动游戏时，在 Discord 个人资料中显示“正在玩 sc-offline”");
         Label(ImVec2(lo.x, y + (s - ImGui::GetFontSize()) * 0.5f), Mix(kUiTextDim, kUiText, (std::max)(h, on)), "Discord");
         DrawSwitch(ImVec2(lo.x + tw - Px(34), y + (s - Px(18)) * 0.5f), on);
     }
@@ -3015,7 +3016,7 @@ static void DrawControls(float W) {
         ImGui::SetCursorScreenPos(p);
         if (ImGui::InvisibleButton(id, ImVec2(s, s))) g.action = i ? kActLogs : kActSettings;
         const float h = Anim(ImGui::GetID(id), ImGui::IsItemHovered() ? 1.0f : 0.0f);
-        Tip(i ? "Logs folder" : "Settings");
+        Tip(i ? "日志目录" : "设置");
         dl->AddRectFilled(p, p + ImVec2(s, s), Col(kUiRow, h), Px(6));
         DrawIcon(i ? kIcoFolder : kIcoSettings, p + ImVec2(s, s) * 0.5f, Px(6), Col(Mix(kUiTextDim, kUiText, h)));
     }
@@ -3045,7 +3046,7 @@ static void DrawHome(float x0, float y0, float x1) {
     const float bannerH = Px(64), sBot = y0 + Px(44) + Px(14) + bannerH + Px(14);
     const float aTop = sBot + gap, aBot = aTop + Px(44) + Px(14) + Px(42) + Px(14);
 
-    const float y = UiCard(ImVec2(x0, y0), ImVec2(x0 + lw, aBot), kIcoPad, "Launcher") + Px(10);
+    const float y = UiCard(ImVec2(x0, y0), ImVec2(x0 + lw, aBot), kIcoPad, "启动器") + Px(10);
     const float rh = Px(36), step = Px(40), rowX = x0 + Px(12), rowW = lw - Px(24);
     const float hy = Anim(ImGui::GetID("##pick"), y + float(g.sel) * step, 20.0f);
     dl->AddRectFilled(ImVec2(rowX, hy), ImVec2(rowX + rowW, hy + rh), Col(kUiRow), Px(8));
@@ -3056,7 +3057,7 @@ static void DrawHome(float x0, float y0, float x1) {
         if (on && ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left)) g.action = c.act;
     }
 
-    const float by = UiCard(ImVec2(rx, y0), ImVec2(x1, sBot), kIcoShield, "Status") + Px(14);
+    const float by = UiCard(ImVec2(rx, y0), ImVec2(x1, sBot), kIcoShield, "状态") + Px(14);
     {
         const ImVec2 lo(rx + Px(14), by), hi(x1 - Px(14), by + bannerH);
         const int v0 = dl->VtxBuffer.Size;
@@ -3071,15 +3072,15 @@ static void DrawHome(float x0, float y0, float x1) {
     }
 
     const float bw = x1 - rx - Px(28);
-    std::string title = "Actions";
+    std::string title = "操作";
     if (!g.question.empty()) { UseFont f(g.bold); title = Fit(g.question, bw - Px(28), false); }
     const float ay = UiCard(ImVec2(rx, aTop), ImVec2(x1, aBot), kIcoBolt, title.c_str()) + Px(14);
     if (!g.question.empty()) {
         const float hw = (bw - Px(10)) * 0.5f;
-        if (UiButton("Yes", ImVec2(rx + Px(14), ay), ImVec2(hw, Px(42)), kAction, true, kIcoCheck)) g.action = kActYes;
-        if (UiButton("No", ImVec2(rx + Px(14) + hw + Px(10), ay), ImVec2(hw, Px(42)), kPlain)) g.action = kActNo;
+        if (UiButton("是", ImVec2(rx + Px(14), ay), ImVec2(hw, Px(42)), kAction, true, kIcoCheck)) g.action = kActYes;
+        if (UiButton("否", ImVec2(rx + Px(14) + hw + Px(10), ay), ImVec2(hw, Px(42)), kPlain)) g.action = kActNo;
     } else if (!g.running.empty()) {
-        const std::string label = "Running " + Narrow(g.running) + "##act";
+        const std::string label = "正在执行 " + Narrow(g.running) + "##act";
         UiButton(label.c_str(), ImVec2(rx + Px(14), ay), ImVec2(bw, Px(42)), kAction, false);
         UiSpinner(ImVec2(rx + Px(34), ay + Px(21)), Px(7), Px(2.0f), kUiActionText);
     } else {
@@ -3217,7 +3218,7 @@ static std::string ZeroText(const PluginSetting& s) {
 // the host would store. On failure `why` says what is wrong.
 static bool CanonSetting(const PluginSetting& s, const std::string& text, std::string& out, std::string& why) {
     if (s.type == "bool") {
-        if (text != "true" && text != "false") { why = "true or false"; return false; }
+        if (text != "true" && text != "false") { why = "true 或 false"; return false; }
         out = text;
         return true;
     }
@@ -3225,47 +3226,47 @@ static bool CanonSetting(const PluginSetting& s, const std::string& text, std::s
         size_t i = 0;
         bool neg = false;
         if (i < text.size() && (text[i] == '+' || text[i] == '-')) { neg = text[i] == '-'; ++i; }
-        if (i == text.size() || text.size() - i > 18) { why = "a whole number"; return false; }
+        if (i == text.size() || text.size() - i > 18) { why = "整数"; return false; }
         long long v = 0;
         for (; i < text.size(); ++i) {
-            if (text[i] < '0' || text[i] > '9') { why = "a whole number"; return false; }
+            if (text[i] < '0' || text[i] > '9') { why = "整数"; return false; }
             v = v * 10 + (text[i] - '0');
         }
         if (neg) v = -v;
-        if (s.hasMin && v < s.minI) { why = "at least " + std::to_string(s.minI); return false; }
-        if (s.hasMax && v > s.maxI) { why = "at most " + std::to_string(s.maxI); return false; }
+        if (s.hasMin && v < s.minI) { why = "最小值为 " + std::to_string(s.minI); return false; }
+        if (s.hasMax && v > s.maxI) { why = "最大值为 " + std::to_string(s.maxI); return false; }
         out = std::to_string(v);
         return true;
     }
     if (s.type == "float") {
-        if (text.size() > 64 || !PlainDecimal(text)) { why = "a number such as 1.5"; return false; }
+        if (text.size() > 64 || !PlainDecimal(text)) { why = "数字，例如 1.5"; return false; }
         const double v = std::strtod(text.c_str(), nullptr);
-        if (!std::isfinite(v)) { why = "not a finite number"; return false; }
-        if (s.hasMin && v < s.minF) { why = "at least " + FloatText(s.minF); return false; }
-        if (s.hasMax && v > s.maxF) { why = "at most " + FloatText(s.maxF); return false; }
+        if (!std::isfinite(v)) { why = "不是有限数值"; return false; }
+        if (s.hasMin && v < s.minF) { why = "最小值为 " + FloatText(s.minF); return false; }
+        if (s.hasMax && v > s.maxF) { why = "最大值为 " + FloatText(s.maxF); return false; }
         out = FloatText(v);
         return true;
     }
     if (s.type == "string") {
-        if (text.size() > 255) { why = "at most 255 characters"; return false; }
-        for (const char c : text) if (c < 0x20 || c > 0x7e) { why = "printable ASCII only"; return false; }
+        if (text.size() > 255) { why = "最多 255 个字符"; return false; }
+        for (const char c : text) if (c < 0x20 || c > 0x7e) { why = "仅支持可打印的 ASCII 字符"; return false; }
         out = text;
         return true;
     }
     for (const std::string& c : s.choices) if (c == text) { out = text; return true; }
-    why = "pick one of the choices";
+    why = "请选择一项";
     return false;
 }
 
 static std::string SettingHint(const PluginSetting& s) {
     std::string h = s.type;
     if (s.type == "enum") {
-        h = "one of ";
+        h = "可选值：";
         for (size_t i = 0; i < s.choices.size(); ++i) h += (i ? ", " : "") + s.choices[i];
     } else if (s.hasMin || s.hasMax) {
         const bool f = s.type == "float";
-        if (s.hasMin) h += ", min " + (f ? FloatText(s.minF) : std::to_string(s.minI));
-        if (s.hasMax) h += ", max " + (f ? FloatText(s.maxF) : std::to_string(s.maxI));
+        if (s.hasMin) h += "，最小值 " + (f ? FloatText(s.minF) : std::to_string(s.minI));
+        if (s.hasMax) h += "，最大值 " + (f ? FloatText(s.maxF) : std::to_string(s.maxI));
     }
     return h;
 }
@@ -3435,7 +3436,7 @@ static bool SavePluginSettings(const wstring& here, const PluginEntry& p, bool r
     CreateDirectoryW((here + L"\\data").c_str(), nullptr);
     CreateDirectoryW((here + L"\\data\\storage").c_str(), nullptr);
     sqlite3* db = OpenPluginDb(PluginDbPath(here, p.folder), SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE);
-    if (!db) { err = "couldn't open data\\storage\\" + p.id + ".db"; return false; }
+    if (!db) { err = "无法打开 data\\storage\\" + p.id + ".db"; return false; }
     bool ok = sqlite3_exec(db, "BEGIN IMMEDIATE", nullptr, nullptr, nullptr) == SQLITE_OK &&
               sqlite3_exec(db, "CREATE TABLE IF NOT EXISTS sco_kv(key TEXT PRIMARY KEY NOT NULL, value BLOB NOT NULL) WITHOUT ROWID",
                            nullptr, nullptr, nullptr) == SQLITE_OK;
@@ -3451,7 +3452,7 @@ static bool SavePluginSettings(const wstring& here, const PluginEntry& p, bool r
     }
     if (ok) ok = sqlite3_exec(db, "COMMIT", nullptr, nullptr, nullptr) == SQLITE_OK;
     if (!ok) {
-        err = std::string("couldn't write the values: ") + sqlite3_errmsg(db);
+        err = std::string("无法写入设置值：") + sqlite3_errmsg(db);
         sqlite3_exec(db, "ROLLBACK", nullptr, nullptr, nullptr);
     }
     sqlite3_close(db);
@@ -3464,10 +3465,10 @@ static bool NoteLive() { return !g_gui.note.empty() && Seconds() - g_gui.noteAt 
 static void DrawPluginList(float x0, float y0, float x1, float y1) {
     Gui& g = g_gui;
     ImDrawList* dl = ImGui::GetWindowDrawList();
-    UiCard(ImVec2(x0, y0), ImVec2(x1, y1), kIcoMods, "Plugins");
+    UiCard(ImVec2(x0, y0), ImVec2(x1, y1), kIcoMods, "插件");
     {
         float tw;
-        { UseFont f(g.bold); tw = ImGui::CalcTextSize("Plugins").x; }
+        { UseFont f(g.bold); tw = ImGui::CalcTextSize("插件").x; }
         int on = 0;
         for (const PluginEntry& p : g.plugins) on += !p.disabled;
         const std::string count = std::to_string(on) + " / " + std::to_string(g.plugins.size());
@@ -3481,7 +3482,7 @@ static void DrawPluginList(float x0, float y0, float x1, float y1) {
         ImGui::SetCursorScreenPos(at);
         if (ImGui::InvisibleButton("##plugdir", ImVec2(fb, fb))) g.action = kActPluginsDir;
         const float h = Anim(ImGui::GetID("##plugdir"), ImGui::IsItemHovered() ? 1.0f : 0.0f);
-        Tip("Open the plugins folder");
+        Tip("打开插件目录");
         dl->AddRectFilled(at, at + ImVec2(fb, fb), Col(kUiRow, h), Px(6));
         DrawIcon(kIcoFolder, at + ImVec2(fb, fb) * 0.5f, Px(6), Col(Mix(kUiTextDim, kUiText, h)));
         headerRight = at.x - Px(8);
@@ -3489,9 +3490,9 @@ static void DrawPluginList(float x0, float y0, float x1, float y1) {
     {
         // Hot reload runs in the game (the sco.reload command); the launcher has no way to call it.
         const float rw = Px(76);
-        if (UiButton("Reload##plug", ImVec2(headerRight - rw, sy), ImVec2(rw, fb), kPlain))
-            PluginNote("Hot reload runs in the game: use the sco.reload command there. The launcher can't call it.");
-        Tip("Plugins reload inside the running game (sco.reload)");
+        if (UiButton("重新加载##plug", ImVec2(headerRight - rw, sy), ImVec2(rw, fb), kPlain))
+            PluginNote("请在游戏内使用 sco.reload 命令热重载。启动器无法执行该命令。");
+        Tip("插件需在正在运行的游戏中重新加载（sco.reload）");
         headerRight -= rw + Px(8);
     }
     const float sw = Px(150);
@@ -3503,7 +3504,7 @@ static void DrawPluginList(float x0, float y0, float x1, float y1) {
     ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, kUiRowHover);
     ImGui::PushStyleColor(ImGuiCol_FrameBgActive, kUiRowHover);
     ImGui::SetNextItemWidth(sw);
-    if (ImGui::InputTextWithHint("##plugsearch", "Search", g.plugSearch, sizeof(g.plugSearch))) g.plugScroll = 0;
+    if (ImGui::InputTextWithHint("##plugsearch", "搜索", g.plugSearch, sizeof(g.plugSearch))) g.plugScroll = 0;
     const bool typing = ImGui::IsItemActive();
     ImGui::PopStyleColor(3);
     ImGui::PopStyleVar(2);
@@ -3528,8 +3529,8 @@ static void DrawPluginList(float x0, float y0, float x1, float y1) {
         const float bh = Px(40);
         dl->AddRectFilled(ImVec2(left, top), ImVec2(right, top + bh), Col(kUiRow), Px(8));
         Label(ImVec2(left + Px(14), top + (bh - ImGui::GetFontSize()) * 0.5f), kUiWarn,
-              Fit("Plugins are off (plugins = off in sc-offline.ini)", right - left - Px(130), false).c_str());
-        if (UiButton("Turn on##plugson", ImVec2(right - Px(104), top + Px(5)), ImVec2(Px(96), bh - Px(10)), kAction)) g.action = kActPluginsOn;
+              Fit("插件已禁用（sc-offline.ini 中 plugins = off）", right - left - Px(130), false).c_str());
+        if (UiButton("启用插件##plugson", ImVec2(right - Px(104), top + Px(5)), ImVec2(Px(96), bh - Px(10)), kAction)) g.action = kActPluginsOn;
         top += bh + Px(8);
     }
 
@@ -3537,13 +3538,13 @@ static void DrawPluginList(float x0, float y0, float x1, float y1) {
     for (int i = 0; i < int(g.plugins.size()); ++i) if (has(g.plugins[i].name + " " + g.plugins[i].id + " " + g.plugins[i].author)) shown.push_back(i);
     if (shown.empty()) {
         const float cy = (top + bottom) * 0.5f;
-        const char* text = g.plugins.empty() ? "No plugins yet" : "No matches";
+        const char* text = g.plugins.empty() ? "暂无插件" : "没有匹配项";
         const ImVec2 ts = ImGui::CalcTextSize(text);
         DrawIcon(g.plugins.empty() ? kIcoMods : kIcoSearch, ImVec2((x0 + x1) * 0.5f, cy - Px(30)), Px(11), Col(kUiTextFaint));
         Label(ImVec2((x0 + x1) * 0.5f - ts.x * 0.5f, cy - ts.y * 0.5f), kUiTextDim, text);
         if (g.plugins.empty()) {
             const float bw = Px(150), bh = Px(34);
-            if (UiButton("Open folder##plugempty", ImVec2((x0 + x1) * 0.5f - bw * 0.5f, cy + Px(16)), ImVec2(bw, bh), kPlain, true, kIcoFolder))
+            if (UiButton("打开目录##plugempty", ImVec2((x0 + x1) * 0.5f - bw * 0.5f, cy + Px(16)), ImVec2(bw, bh), kPlain, true, kIcoFolder))
                 g.action = kActPluginsDir;
         }
         return;
@@ -3563,15 +3564,15 @@ static void DrawPluginList(float x0, float y0, float x1, float y1) {
         if (ImGui::InvisibleButton("##plug", size)) {
             if (SetPluginDisabled(g.here, p.folder, !p.disabled)) {
                 p.disabled = !p.disabled;
-                PluginNote(std::string(p.disabled ? "Off" : "On") + ": " + p.name + ". The game picks this up at its next start.");
+                PluginNote(std::string(p.disabled ? "关闭" : "开启") + ": " + p.name + "。下次启动游戏时生效。");
             } else {
-                PluginNote("Couldn't change data\\plugins\\" + p.id + "\\disabled (is the folder read-only?)");
+                PluginNote("无法修改 data\\plugins\\" + p.id + "\\disabled（目录是否为只读？）");
             }
         }
         const ImGuiID id = ImGui::GetID("##plug");
         const float h = Anim(id, ImGui::IsItemHovered() ? 1.0f : 0.0f), on = Anim(id + 1, p.disabled ? 0.0f : 1.0f);
         std::string tip = p.about;
-        if (!p.kind.empty()) tip += (tip.empty() ? "" : "\n") + p.kind + " plugin";
+        if (!p.kind.empty()) tip += (tip.empty() ? "" : "\n") + p.kind + " 插件";
         if (!tip.empty()) Tip(tip.c_str());
         dl->AddRectFilled(pos, pos + size, Col(Mix(kUiRow, kUiRowHover, h)), Px(8));
         const float ty = ry + (rowH - ImGui::GetFontSize()) * 0.5f;
@@ -3593,7 +3594,7 @@ static void DrawPluginList(float x0, float y0, float x1, float y1) {
             ImGui::SetCursorScreenPos(ImVec2(gearX, ry + (rowH - Px(28)) * 0.5f));
             const bool open = ImGui::InvisibleButton("##gear", ImVec2(Px(28), Px(28)));
             const float gh = Anim(ImGui::GetID("##gear"), ImGui::IsItemHovered() ? 1.0f : 0.0f);
-            Tip("Settings");
+            Tip("设置");
             DrawIcon(kIcoSettings, ImVec2(gearX + Px(14), ry + rowH * 0.5f), Px(6), Col(Mix(kUiTextDim, kUiText, gh)));
             if (open) { g.plugOpen = p.id; g.plugScroll = 0; }
         }
@@ -3605,17 +3606,17 @@ static void DrawPluginList(float x0, float y0, float x1, float y1) {
 static void DrawPluginSettings(float x0, float y0, float x1, float y1, PluginEntry& p) {
     Gui& g = g_gui;
     ImDrawList* dl = ImGui::GetWindowDrawList();
-    const std::string title = Fit(p.name + " settings", (x1 - x0) - Px(120), false);
+    const std::string title = Fit(p.name + " 设置", (x1 - x0) - Px(120), false);
     UiCard(ImVec2(x0, y0), ImVec2(x1, y1), kIcoSettings, title.c_str());
-    if (UiButton("Back##plugback", ImVec2(x1 - Px(12) - Px(64), y0 + Px(9)), ImVec2(Px(64), Px(26)), kQuiet)) {
+    if (UiButton("返回##plugback", ImVec2(x1 - Px(12) - Px(64), y0 + Px(9)), ImVec2(Px(64), Px(26)), kQuiet)) {
         g.plugOpen.clear(); g.plugScroll = 0; g.pluginsAt = 0;
         return;
     }
     const float left = x0 + Px(12), right = x1 - Px(30), top = y0 + Px(44) + Px(10);
     if (p.settingsBad || p.settings.empty()) {
         dl->AddText(ImGui::GetFont(), ImGui::GetFontSize(), ImVec2(left + Px(2), top + Px(4)), Col(kUiWarn),
-                    "plugin.ini has a [settings] line this launcher can't read; the game may refuse the plugin. "
-                    "Run sco-plugin-check on the folder.", nullptr, right - left);
+                    "plugin.ini 的 [settings] 中有启动器无法读取的配置，游戏可能拒绝加载此插件。"
+                    "请使用 sco-plugin-check 检查该目录。", nullptr, right - left);
         return;
     }
     // Edits are written while the game is closed: it reads the values once, at start.
@@ -3681,20 +3682,20 @@ static void DrawPluginSettings(float x0, float y0, float x1, float y1, PluginEnt
     ImGui::PopClipRect();
 
     std::string err;
-    if (UiButton("Save##plugsave", ImVec2(left, footY), ImVec2(bw, bh), kAction, canEdit && dirty, kIcoCheck)) {
-        if (SavePluginSettings(g.here, p, false, err)) PluginNote("Saved. Applies at the next game start.");
+    if (UiButton("保存##plugsave", ImVec2(left, footY), ImVec2(bw, bh), kAction, canEdit && dirty, kIcoCheck)) {
+        if (SavePluginSettings(g.here, p, false, err)) PluginNote("已保存，下次启动游戏时生效。");
         else PluginNote(err);
         g.plugins = ReadPlugins(g.here);   // p is gone after this; the edits come back from what was saved
         return;
     }
-    if (UiButton("Reset##plugreset", ImVec2(left + bw + Px(8), footY), ImVec2(bw, bh), kPlain, canEdit && anyKept)) {
-        if (SavePluginSettings(g.here, p, true, err)) PluginNote("Back to the defaults. Applies at the next game start.");
+    if (UiButton("重置##plugreset", ImVec2(left + bw + Px(8), footY), ImVec2(bw, bh), kPlain, canEdit && anyKept)) {
+        if (SavePluginSettings(g.here, p, true, err)) PluginNote("已恢复默认值，下次启动游戏时生效。");
         else PluginNote(err);
         g.plugins = ReadPlugins(g.here);
         return;
     }
     const float mx = left + 2 * bw + Px(20);
-    const std::string msg = !canEdit ? "Close the game to edit." : NoteLive() ? g.note : "Applies at the next game start.";
+    const std::string msg = !canEdit ? "请关闭游戏后再修改。" : NoteLive() ? g.note : "下次启动游戏时生效。";
     Label(ImVec2(mx, footY + (bh - ImGui::GetFontSize()) * 0.5f), kUiTextDim, Fit(msg, right - mx, false).c_str());
 }
 
@@ -3713,9 +3714,9 @@ static void DrawPlugins(float x0, float y0, float x1, float y1) {
 
 static void DrawOutputPage(float x0, float y0, float x1, float y1) {
     Gui& g = g_gui;
-    float y = UiCard(ImVec2(x0, y0), ImVec2(x1, y1), kIcoOutput, "Output") + Px(12);
+    float y = UiCard(ImVec2(x0, y0), ImVec2(x1, y1), kIcoOutput, "输出") + Px(12);
     const float cw = Px(56);
-    if (UiButton("Copy", ImVec2(x1 - Px(12) - cw, y0 + Px(9)), ImVec2(cw, Px(26)), kQuiet, !g.log.empty())) g.action = kActCopy;
+    if (UiButton("复制", ImVec2(x1 - Px(12) - cw, y0 + Px(9)), ImVec2(cw, Px(26)), kQuiet, !g.log.empty())) g.action = kActCopy;
     if (!g.running.empty()) UiSpinner(ImVec2(x1 - Px(12) - cw - Px(10), y0 + Px(22)), Px(6), Px(1.8f), kUiAccent);
     if (!g.question.empty()) y = DrawQuestion(ImVec2(x0 + Px(14), y), x1 - x0 - Px(28)) + Px(12);
     ImGui::SetCursorScreenPos(ImVec2(x0 + Px(14), y));
@@ -3888,19 +3889,19 @@ static void RunAction() {
     case kActPluginsOn:
         if (SetIniValue(g.here + L"\\sc-offline.ini", "plugins", "on")) {
             RefreshLight();
-            PluginNote("Plugins are on. They load the next time the game starts.");
+            PluginNote("插件已启用，下次启动游戏时加载。");
         } else {
-            PluginNote("Couldn't write sc-offline.ini; set plugins = on there by hand.");
+            PluginNote("无法写入 sc-offline.ini，请手动设置 plugins = on。");
         }
         break;
     case kActDiscord: {   // the Discord plugin's `disabled` marker; the next Play uses it
         const bool on = !g.discord;
         if (SetPluginDisabled(g.here, L"discord", !on)) {
             g.discord = on;
-            AppendOutput(on ? L"\nDiscord status on: your profile shows \"Playing sc-offline\" from the next Play.\n"
-                            : L"\nDiscord status off: from the next Play, nothing is shown on Discord.\n");
+            AppendOutput(on ? L"\nDiscord 状态已开启：下次启动游戏时，个人资料将显示“正在玩 sc-offline”。\n"
+                            : L"\nDiscord 状态已关闭：下次启动游戏时，不再显示 Discord 游戏状态。\n");
         } else {
-            AppendOutput(L"\n[!] couldn't change data\\plugins\\discord\\disabled (is the folder read-only?)\n");
+            AppendOutput(L"\n[!] 无法修改 data\\plugins\\discord\\disabled（目录是否为只读？）\n");
         }
         break;
     }
@@ -3971,8 +3972,8 @@ static LRESULT CALLBACK GuiProc(HWND wnd, UINT msg, WPARAM wp, LPARAM lp) {
     }
     case WM_CLOSE:
         if (!g.running.empty() &&
-            MessageBoxW(wnd, L"A command is still running. If you close this window, sc-offline still takes the mod out and undoes "
-                             L"its PC changes when the game closes, but any question it asks is answered No.\n\nClose anyway?",
+            MessageBoxW(wnd, L"仍有命令正在运行。即使关闭此窗口，游戏退出后 sc-offline 仍会移除模组并还原"
+                             L"系统设置，但之后的所有询问都会自动选择“否”。\n\n仍要关闭吗？",
                         L"sc-offline", MB_YESNO | MB_ICONWARNING | MB_DEFBUTTON2) != IDYES)
             return 0;
         DestroyWindow(wnd);
@@ -3985,19 +3986,12 @@ static LRESULT CALLBACK GuiProc(HWND wnd, UINT msg, WPARAM wp, LPARAM lp) {
 static void LoadFonts() {
     Gui& g = g_gui;
     ImGuiIO& io = ImGui::GetIO();
-    const wstring dir = EnvOr(L"WINDIR", L"C:\\Windows") + L"\\Fonts\\";
-    auto load = [&](const wchar_t* file) -> ImFont* {
-        const wstring p = dir + file;
-        return IsFile(p) ? io.Fonts->AddFontFromFileTTF(Narrow(p).c_str(), 15.0f) : nullptr;
-    };
-    g.font = load(L"segoeui.ttf");
-    g.bold = load(L"seguisb.ttf");
-    if (!g.bold) g.bold = load(L"segoeuib.ttf");
-    g.mono = load(L"consola.ttf");
-    ImFont* fallback = (!g.font || !g.bold || !g.mono) ? io.Fonts->AddFontDefault() : nullptr;
-    if (!g.font) g.font = fallback;
-    if (!g.bold) g.bold = g.font;
-    if (!g.mono) g.mono = fallback;
+    const wstring path = g.here + L"\\data\\fonts\\NotoSansSC-Regular.ttf";
+    g.font = sc_offline_chs::LoadChineseFont(path.c_str(), 15.0f);
+    if (!g.font) g.font = io.Fonts->AddFontDefault();
+    // All three roles must contain Chinese, including the log/output pane.
+    g.bold = g.font;
+    g.mono = g.font;
     io.FontDefault = g.font;
 }
 
@@ -4059,7 +4053,7 @@ static int RunGui() {
     wc.hCursor = LoadCursorW(nullptr, IDC_ARROW); wc.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
     wc.hIcon = LoadIconW(nullptr, IDI_APPLICATION);
     RegisterClassW(&wc);
-    const wstring title = L"sc-offline " + Wide(SCO_VERSION) + L" - Star Citizen offline mod";
+    const wstring title = L"sc-offline " + Wide(SCO_VERSION) + L" - 星际公民离线模组（简体中文）";
     HWND wnd = CreateWindowExW(0, L"sc-offline", title.c_str(), WS_POPUP | WS_THICKFRAME | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX,
                                g.splash.left, g.splash.top, sw, sh, nullptr, nullptr, wc.hInstance, nullptr);
     if (!wnd) return kExitError;
@@ -4077,8 +4071,8 @@ static int RunGui() {
     if (!CreateDevice(wnd)) {
         DropDevice();
         DestroyWindow(wnd);
-        MessageBoxW(nullptr, L"sc-offline couldn't open its window (Direct3D 11 isn't available).\n\n"
-                             L"Run it from a terminal instead, for example: sc-offline.exe play", L"sc-offline", MB_ICONERROR);
+        MessageBoxW(nullptr, L"sc-offline 无法打开窗口（Direct3D 11 不可用）。\n\n"
+                             L"请改用终端运行，例如：sc-offline.exe play", L"sc-offline", MB_ICONERROR);
         return kExitError;
     }
     IMGUI_CHECKVERSION();
@@ -4122,24 +4116,26 @@ static int RunGui() {
 }
 
 static const char* kUsage =
-    "usage: sc-offline.exe [command] [--game <folder>] [--dry-run] [--skip-eac-check]\n"
+    "用法：sc-offline.exe [命令] [--game <目录>] [--dry-run] [--skip-eac-check]\n"
     "\n"
-    "  play       (default) copy the mod in, start the game, take the mod out when it closes\n"
-    "  install    copy the mod in and leave it there; run `uninstall` before going online\n"
-    "  uninstall  take the mod out and restore anything it replaced\n"
-    "  status     check the setup and report; changes nothing\n"
-    "  update     check GitHub for a newer sc-offline and offer to install it (saves and ini kept)\n"
-    "  help       show this\n"
+    "  play       （默认）安装模组并启动游戏，游戏关闭后移除模组\n"
+    "  install    安装并保留模组；进入在线模式前请运行 uninstall\n"
+    "  uninstall  移除模组并还原被替换的文件\n"
+    "  status     检查并显示配置状态，不作修改\n"
+    "  update     检查 GitHub 更新并询问是否安装（保留存档和 ini 配置）\n"
+    "  help       显示此帮助\n"
     "\n"
-    "  --game <folder>   your StarCitizen, LIVE or Bin64 folder (else sc-offline.ini, else searched)\n"
-    "  --dry-run         print every step, change nothing, start nothing\n"
-    "  --skip-eac-check  don't stop when Easy Anti-Cheat looks active\n"
-    "  --console         double-clicked: run `play` in this console instead of opening the window\n"
-    "  --window          open the window (from a terminal, or under Wine/Proton)\n"
+    "  --game <目录>    StarCitizen、LIVE 或 Bin64 目录（未指定则读取 ini 或自动搜索）\n"
+    "  --dry-run        仅显示操作步骤，不修改文件或启动程序\n"
+    "  --skip-eac-check  检测到 Easy Anti-Cheat 启用时不停止执行\n"
+    "  --console        双击运行时在控制台执行 play，不打开图形窗口\n"
+    "  --window         打开图形窗口（用于终端或 Wine/Proton）\n"
     "\n"
-    "exit codes: 0 ok, 1 error, 2 Easy Anti-Cheat active, 3 the game is running\n";
+    "退出码：0 成功，1 错误，2 Easy Anti-Cheat 已启用，3 游戏正在运行\n";
 
 int wmain(int argc, wchar_t** argv) {
+    SetConsoleOutputCP(CP_UTF8);
+    SetConsoleCP(CP_UTF8);
     if (argc == 3 && !_wcsicmp(argv[1], L"--self-test")) return SelfTest(Narrow(argv[2]));
 #ifdef SCO_UPDATE_TEST
     if (argc == 5 && !_wcsicmp(argv[1], L"--apply-zip")) return ApplyZipForTest(argv[2], argv[3], argv[4]);
@@ -4162,7 +4158,7 @@ int wmain(int argc, wchar_t** argv) {
     for (int i = 1; i < argc; ++i) {
         const wchar_t* a = argv[i];
         if (!_wcsicmp(a, L"--game")) {
-            if (i + 1 >= argc) return Fail("--game needs a folder: sc-offline.exe --game \"D:\\Games\\StarCitizen\"");
+            if (i + 1 >= argc) return Fail("--game 需要指定目录，例如：sc-offline.exe --game \"D:\\Games\\StarCitizen\"");
             gameArg = argv[++i];
         } else if (!_wcsicmp(a, L"--dry-run")) dry = true;
         else if (!_wcsicmp(a, L"--console")) {}
@@ -4174,11 +4170,11 @@ int wmain(int argc, wchar_t** argv) {
             command = L"help"; sawCommand = true;
         } else {
             std::printf("%s", kUsage);
-            return Fail("unknown argument '%ls'", a);
+            return Fail("未知参数“%ls”", a);
         }
     }
     for (wchar_t& c : command) c = towlower(c);
-    if (command == L"help") { std::printf("sc-offline launcher %s (%s)\n\n%s", SCO_VERSION, SCO_BASED_ON, kUsage); return kExitOk; }
+    if (command == L"help") { std::printf("sc-offline 启动器 %s（%s）\n\n%s", SCO_VERSION, SCO_BASED_ON, kUsage); return kExitOk; }
 
     const wstring here = ExeDir();
     const wstring data = here + L"\\data";
@@ -4186,18 +4182,18 @@ int wmain(int argc, wchar_t** argv) {
     std::string header = "sc-offline.exe";
     for (int i = 1; i < argc; ++i) header += " " + Narrow(argv[i]);
     OpenLog(data, false, header.c_str());
-    Out("sc-offline launcher %s%s\n\n", SCO_VERSION, dry ? " - dry run, nothing is changed" : "");
+    Out("sc-offline 启动器 %s%s\n\n", SCO_VERSION, dry ? " - 模拟运行，不作任何修改" : "");
 
     if (!CanWriteTo(data))
-        Out("[!] this folder (%ls) can't be written without administrator rights, so the mod can't save\n"
-            "    your wallet or places. Move the sc-offline folder out of Program Files, e.g. to your Desktop.\n", here.c_str());
+        Out("[!] 目录（%ls）需要管理员权限才能写入，模组无法保存\n"
+            "    钱包或位置。请将 sc-offline 移到 Program Files 以外的目录，例如桌面。\n", here.c_str());
     if (!dry) SettlePreviousUpdate(here);
     Config cfg;
-    if (!ReadConfig(here + L"\\sc-offline.ini", cfg)) Out("[i] no sc-offline.ini next to this exe; using defaults\n");
+    if (!ReadConfig(here + L"\\sc-offline.ini", cfg)) Out("[i] 程序旁未找到 sc-offline.ini，使用默认配置\n");
     // 0.7.5: the Discord status is the discord plugin's. An old `discord_presence = off` turns that
     // plugin off once and the line goes, so the launcher's Discord switch owns it from then on.
     if (cfg.discordOff && !dry && SetPluginDisabled(here, L"discord", true) && DropIniKey(here + L"\\sc-offline.ini", "discord_presence"))
-        Out("[i] discord_presence = off: the Discord plugin is turned off (data\\plugins\\discord\\disabled)\n");
+        Out("[i] discord_presence = off：Discord 插件已关闭（data\\plugins\\discord\\disabled）\n");
 
     // 0. Updates (issue #14). Never blocks play: no network, a timeout or any odd reply is just skipped.
     if (command == L"update" || (cfg.checkUpdates && !dry && (command == L"play" || command == L"status"))) {
@@ -4205,22 +4201,22 @@ int wmain(int argc, wchar_t** argv) {
         std::string why;
         const UpdateInfo u = CheckLatest(explicitUpdate ? 15000 : 3000, cfg.prereleases, &why);
         if (u.tag.empty()) {
-            if (explicitUpdate) { Out("Update:   %s\n", why.c_str()); return why.rfind("up to date", 0) == 0 ? kExitOk : kExitError; }
+            if (explicitUpdate) { Out("更新：    %s\n", why.c_str()); return why.rfind("已是最新版本", 0) == 0 ? kExitOk : kExitError; }
         } else {
-            Out("Update:   sc-offline %s is available (you have %s)\n", u.tag.c_str(), SCO_VERSION);
-            if (command == L"status") Out("          run `sc-offline.exe update` to install it\n");
-            else if (dry) Out("[dry-run] would download %s, check its SHA-256 and replace the program files\n", u.zipName.c_str());
-            else if (GameRunning()) Out("[!] close the game before updating\n");
-            else if (!OwnsConsoleInput()) Out("          (not asking: no console to answer in)\n");
-            else if (AskYes("Update now? Your saves and sc-offline.ini are kept.")) {
+            Out("更新：    sc-offline %s 可用（当前为 %s）\n", u.tag.c_str(), SCO_VERSION);
+            if (command == L"status") Out("          运行 sc-offline.exe update 安装更新\n");
+            else if (dry) Out("[模拟运行] 将下载 %s，校验 SHA-256 并替换程序文件\n", u.zipName.c_str());
+            else if (GameRunning()) Out("[!] 请先关闭游戏再更新\n");
+            else if (!OwnsConsoleInput()) Out("          （没有可供回答的控制台，跳过询问）\n");
+            else if (AskYes("现在更新吗？存档和 sc-offline.ini 将被保留。")) {
                 if (ApplyUpdate(here, u)) {
-                    if (GuiChild()) { Out("[i] restarting sc-offline with the new version\n"); return kExitRestart; }
-                    Out("[i] starting the new version\n\n");
+                    if (GuiChild()) { Out("[i] 正在重新启动新版 sc-offline\n"); return kExitRestart; }
+                    Out("[i] 正在启动新版本\n\n");
                     if (g_log) { std::fclose(g_log); g_log = nullptr; }
                     Relaunch(here);
                 }
-                if (explicitUpdate) return Fail("update failed; your current version is unchanged");
-            } else Out("[i] not updating\n");
+                if (explicitUpdate) return Fail("更新失败，当前版本未更改");
+            } else Out("[i] 已取消更新\n");
         }
         if (explicitUpdate) return kExitOk;
         Out("\n");
@@ -4230,35 +4226,35 @@ int wmain(int argc, wchar_t** argv) {
     wstring bin;
     if (!gameArg.empty()) {
         bin = ToBin64(gameArg, cfg.channel);
-        if (bin.empty()) return Fail("no %ls under --game %ls (channel %ls)", kGameExe, gameArg.c_str(), cfg.channel.c_str());
+        if (bin.empty()) return Fail("未找到 %ls；--game 指定目录为 %ls（频道 %ls）", kGameExe, gameArg.c_str(), cfg.channel.c_str());
     } else if (!cfg.game.empty()) {
         bin = ToBin64(cfg.game, cfg.channel);
-        if (bin.empty()) return Fail("no %ls under game = %ls in sc-offline.ini (channel %ls)", kGameExe, cfg.game.c_str(), cfg.channel.c_str());
+        if (bin.empty()) return Fail("未找到 %ls；sc-offline.ini 中 game = %ls（频道 %ls）", kGameExe, cfg.game.c_str(), cfg.channel.c_str());
     } else {
         const std::vector<Found> found = DetectBin64(here, cfg.channel);
         if (!found.empty()) {
             bin = found.front().bin;
-            Out("[i] found the game %s\n", found.front().how);
+            Out("[i] 已找到游戏：%s\n", found.front().how);
             for (size_t i = 1; i < found.size(); ++i)
-                Out("[i] also found %ls (set game = in sc-offline.ini to use it)\n", found[i].bin.c_str());
+                Out("[i] 还找到 %ls（可在 sc-offline.ini 中设置 game = 使用此目录）\n", found[i].bin.c_str());
         } else if (OwnsConsole()) {
-            Out("[i] couldn't find Star Citizen (%ls) by itself. Pick your StarCitizen folder in the window that opens.\n",
+            Out("[i] 未能自动找到星际公民（%ls）。请在弹出的窗口中选择 StarCitizen 目录。\n",
                 cfg.channel.c_str());
             const wstring picked = PickFolder();
             bin = picked.empty() ? L"" : ToBin64(picked, cfg.channel);
             if (bin.empty())
-                return Fail("no %ls under %ls (channel %ls). Open sc-offline.ini and set\n"
-                            "    game = <your StarCitizen folder>", kGameExe,
-                            picked.empty() ? L"(nothing picked)" : picked.c_str(), cfg.channel.c_str());
+                return Fail("未找到 %ls，搜索目录为 %ls（频道 %ls）。请打开 sc-offline.ini 并设置\n"
+                            "    game = <你的 StarCitizen 目录>", kGameExe,
+                            picked.empty() ? L"（未选择目录）" : picked.c_str(), cfg.channel.c_str());
         } else {
-            return Fail("couldn't find Star Citizen (%ls). Open sc-offline.ini and set\n"
-                        "    game = <your StarCitizen folder>\n"
-                        "or pass --game <folder>", cfg.channel.c_str());
+            return Fail("未找到星际公民（%ls）。请打开 sc-offline.ini 并设置\n"
+                        "    game = <你的 StarCitizen 目录>\n"
+                        "或使用参数 --game <目录>", cfg.channel.c_str());
         }
         // Remember it, so the next run skips the search. game = and --game always win over this.
         if (!dry) WriteAll(RememberedPathFile(here), Narrow(bin) + "\n");
     }
-    Out("Folder:   %ls\n", bin.c_str());
+    Out("目录：    %ls\n", bin.c_str());
     const GamePaths g(bin);
 
     PcWanted pc;
@@ -4272,19 +4268,19 @@ int wmain(int argc, wchar_t** argv) {
 
     const bool running = GameRunning();
     if (command == L"uninstall") {
-        if (running) return FailCode(kExitRunning, "%ls is running. Close it first.", kGameExe);
+        if (running) return FailCode(kExitRunning, "%ls 正在运行，请先关闭。", kGameExe);
         if (dry) return (TakeMod(g, true) | UndoPcChanges(true)) ? kExitError : kExitOk;
     } else {
         if (!IsFile(here + L"\\dinput8.dll"))
-            return Fail("dinput8.dll is missing next to sc-offline.exe.\n    Extract the whole zip into one folder and run this from there.");
-        if (running) return FailCode(kExitRunning, "%ls is already running. Close it first.", kGameExe);
+            return Fail("sc-offline.exe 旁缺少 dinput8.dll。\n    请将整个压缩包解压到同一目录，再运行程序。");
+        if (running) return FailCode(kExitRunning, "%ls 已在运行，请先关闭。", kGameExe);
         if (checks.pcLeftover && !dry && command == L"play") {
-            if (AskYes("Undo them now and stop, instead of playing?")) { Out("[i] undoing them (same as `sc-offline.exe uninstall`)\n"); command = L"uninstall"; }
-            else Out("[i] playing; they are undone together with this session's changes when the game closes.\n");
+            if (AskYes("现在还原遗留更改并停止启动游戏吗？")) { Out("[i] 正在还原（等同于 sc-offline.exe uninstall）\n"); command = L"uninstall"; }
+            else Out("[i] 继续启动游戏；退出后将连同本次更改一起还原。\n");
         }
         const bool playHandlesEac = command == L"play" && cfg.eacRename && !OnWine();
         if (checks.eacActive && !skipEac && !playHandlesEac)
-            return FailCode(kExitEac, "stopped: Easy Anti-Cheat is active (see above). --skip-eac-check overrides this.");
+            return FailCode(kExitEac, "已停止：Easy Anti-Cheat 已启用（见上文）。--skip-eac-check 可跳过此检查。");
     }
 
     // 3. What the mod reads (the SC_OFFLINE_* variables, see docs/data-files.md).
@@ -4317,9 +4313,9 @@ int wmain(int argc, wchar_t** argv) {
         if (command == L"uninstall") UndoPcChanges(true);
         if (PutMod(here, g, play ? "play" : "install", true)) return kExitError;
         if (play) {
-            Out("[dry-run] would start %ls\\%ls\n", bin.c_str(), kGameExe);
-            Out("[dry-run] after the game closes: take the mod out, put back what was set aside, undo the PC changes\n");
-            if (cfg.cleanLogs) Out("[dry-run] then list this session's Game.log, logbackups and crash files and ask (twice) before deleting them\n");
+            Out("[模拟运行] 将启动 %ls\\%ls\n", bin.c_str(), kGameExe);
+            Out("[模拟运行] 游戏关闭后：移除模组、还原备份文件和系统设置\n");
+            if (cfg.cleanLogs) Out("[模拟运行] 然后列出本次 Game.log、日志备份和崩溃文件，经两次确认后删除\n");
         }
         return kExitOk;
     }
@@ -4327,16 +4323,16 @@ int wmain(int argc, wchar_t** argv) {
     HANDLE ready = CreateEventW(nullptr, TRUE, FALSE, eventName.c_str());
     HANDLE closed = play ? CreateEventW(nullptr, TRUE, FALSE, (eventName + L"-closed").c_str()) : nullptr;
     HANDLE helper = ready ? StartHelper(command.c_str(), g, eventName, pc) : nullptr;
-    if (!helper) return Fail("couldn't start the mod helper (error %lu); administrator rights refused?", GetLastError());
+    if (!helper) return Fail("无法启动模组辅助进程（错误 %lu），是否拒绝了管理员权限？", GetLastError());
 
     if (!play) {   // install / uninstall: the helper does the whole job
         WaitForSingleObject(helper, INFINITE);
         DWORD code = 1; GetExitCodeProcess(helper, &code);
         CloseHandle(helper); CloseHandle(ready);
-        if (code) return Fail("the helper failed (exit %lu); see data\\launcher.log", code);
+        if (code) return Fail("辅助进程失败（退出码 %lu），详见 data\\launcher.log", code);
         if (command == L"install")
-            Out("Mod:      installed. Start the game your usual way; run `sc-offline.exe uninstall` before going online.\n");
-        else Out("Mod:      removed.\n");
+            Out("模组：    已安装。可正常启动游戏；进入在线模式前请运行 sc-offline.exe uninstall。\n");
+        else Out("模组：    已移除。\n");
         return kExitOk;
     }
 
@@ -4345,13 +4341,13 @@ int wmain(int argc, wchar_t** argv) {
     // signals (copied) or exits (copy failed; it undid nothing because nothing was left half-done).
     if (WaitForMultipleObjects(2, waitOn, FALSE, INFINITE) != WAIT_OBJECT_0) {
         DWORD code = 0; GetExitCodeProcess(helper, &code);
-        return Fail("couldn't copy the mod into %ls (helper exit %lu); see data\\launcher.log", bin.c_str(), code);
+        return Fail("无法将模组复制到 %ls（辅助进程退出码 %lu），详见 data\\launcher.log", bin.c_str(), code);
     }
     CloseHandle(ready);
-    Out("Mod:      copied into Bin64\n");
+    Out("模组：    已复制到 Bin64\n");
     if (NeedsPcChanges(pc))
-        Out("PC:       %s%s%s(undone when the game closes)\n", pc.firewall ? "game, RSI Launcher and CrashHandler network blocked, " : "",
-            pc.eacHosts ? "EAC hosts line, " : "", pc.eacRename ? "EAC renamed " : "");
+        Out("系统：    %s%s%s（游戏关闭后还原）\n", pc.firewall ? "已阻止游戏、RSI 启动器和 CrashHandler 联网，" : "",
+            pc.eacHosts ? "已添加 EAC hosts 条目，" : "", pc.eacRename ? "EAC 已重命名 " : "");
     SetConsoleCtrlHandler(OnCtrl, TRUE);
 
     // 5. Play. The game runs with normal rights, never the helper's, and never administrator's even
@@ -4364,15 +4360,15 @@ int wmain(int argc, wchar_t** argv) {
     const ULONGLONG sessionStart = FileTimeU64(startFt) - 2ull * 10000000ull;   // 2 s of clock slack
     if (!StartGame(exe, cmd, bin, pi)) {
         const DWORD err = GetLastError();
-        Out("[!] couldn't start %ls (error %lu)\n", exe.c_str(), err);
+        Out("[!] 无法启动 %ls（错误 %lu）\n", exe.c_str(), err);
         if (err == ERROR_ELEVATION_REQUIRED)
-            Out("    StarCitizen.exe is set to \"Run this program as an administrator\" (its Properties >\n"
-                "    Compatibility tab). Untick it: as administrator, overlay layers such as OBS load into the\n"
-                "    game and can crash it while it loads.\n");
+            Out("    StarCitizen.exe 启用了“以管理员身份运行此程序”（属性 >\n"
+                "    兼容性）。请取消勾选：管理员模式下，OBS 等叠加层会加载到\n"
+                "    游戏中，可能导致加载时崩溃。\n");
         rc = kExitError;
     } else {
         if (!checks.gameBuild.empty()) WriteAll(data + L"\\game-build.txt", checks.gameBuild + "\n");
-        Out("\nPlaying. When the game closes, the mod is removed from Bin64.\n");
+        Out("\n游戏已启动。游戏关闭后，模组将从 Bin64 移除。\n");
         WaitForSingleObject(pi.hProcess, INFINITE);
         CloseHandle(pi.hThread); CloseHandle(pi.hProcess);
         while (GameRunning()) Sleep(2000);   // the game can hand over to a second StarCitizen.exe
@@ -4381,15 +4377,15 @@ int wmain(int argc, wchar_t** argv) {
         if (closed) SetEvent(closed);
         if (WaitForSingleObject(helper, 120000) == WAIT_OBJECT_0) {
             DWORD code = 1; GetExitCodeProcess(helper, &code);
-            if (code == 0) Out("Mod:      removed from Bin64; PC changes undone. Safe to go online.\n");
-            else Out("[!] the helper couldn't undo everything (exit %lu); click Uninstall. See data\\launcher.log\n", code);
+            if (code == 0) Out("模组：    已从 Bin64 移除，系统设置已还原，可以进入在线模式。\n");
+            else Out("[!] 辅助进程未能还原全部更改（退出码 %lu），请点击“卸载”。详见 data\\launcher.log\n", code);
         }
         if (cfg.crashReports && OwnsConsoleInput()) OfferCrashReport(here, ParentDir(bin), sessionStart, checks.gameBuild);
         if (cfg.cleanLogs && OwnsConsoleInput()) OfferToCleanLogs(ParentDir(bin), sessionStart);
-        else if (cfg.cleanLogs) Out("Logs:     not asking (no console to answer in); run from a window to be asked\n");
+        else if (cfg.cleanLogs) Out("日志：    没有可供回答的控制台，跳过询问；请在窗口中运行以使用此功能\n");
     }
     if (WaitForSingleObject(helper, 0) != WAIT_OBJECT_0)
-        Out("Mod:      the helper removes it from Bin64 and undoes the PC changes as this window closes.\n");
+        Out("模组：    此窗口关闭时，辅助进程会从 Bin64 移除模组并还原系统设置。\n");
     CloseHandle(helper);
     if (closed) CloseHandle(closed);
     if (rc) PauseIfOwnConsole();

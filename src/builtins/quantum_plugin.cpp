@@ -35,64 +35,64 @@ sco_result Travel(const sco_arg* args, uint32_t, void*, char* reply, uint32_t si
     const char* name = args[0].v.s;
     const double altitude = args[1].v.f;
     if (!name || !*name) {
-        snprintf(reply, size, "Name a place from the Travel tab (locations.txt or a scan)");
+        snprintf(reply, size, "请输入“旅行”页面中的地点名称（来自 locations.txt 或扫描结果）");
         return SCO_BAD_ARG;
     }
     if (!(altitude >= kMinAltitude && altitude <= kMaxAltitude)) {
-        snprintf(reply, size, "Altitude must be %.0f to %.0f m", kMinAltitude, kMaxAltitude);
+        snprintf(reply, size, "高度必须在 %.0f 到 %.0f 米之间", kMinAltitude, kMaxAltitude);
         return SCO_BAD_ARG;
     }
     const int n = Travel_GetPlaces(g_places, kMaxPlaces);
     for (int i = 0; i < n; ++i) {
         if (_stricmp(g_places[i].name, name) != 0) continue;
         Travel_RequestPlace(g_places[i], static_cast<float>(altitude));
-        snprintf(reply, size, "Travelling to %s (%s); the status strip says where you arrive", g_places[i].name, g_places[i].system);
+        snprintf(reply, size, "正在前往 %s（%s），抵达位置将显示在状态栏", g_places[i].name, g_places[i].system);
         return SCO_OK;
     }
-    snprintf(reply, size, "'%s' isn't in the place list (%d places)", name, n);
+    snprintf(reply, size, "地点列表中没有“%s”（共 %d 个地点）", name, n);
     return SCO_FAILED;
 }
 
 sco_result Bookmark(const sco_arg* args, uint32_t, void*, char* reply, uint32_t size) {
     const char* name = args[0].v.s;
     if (!name || !*name) {
-        snprintf(reply, size, "Name a saved spot (the Travel tab's list)");
+        snprintf(reply, size, "请输入收藏位置名称（见“旅行”页面）");
         return SCO_BAD_ARG;
     }
     const int n = Travel_GetBookmarks(g_marks, kMaxBookmarks);
     for (int i = 0; i < n; ++i) {
         if (_stricmp(g_marks[i].name, name) != 0) continue;
         Travel_RequestBookmark(i);
-        snprintf(reply, size, "Going to '%s' (%s)", g_marks[i].name, g_marks[i].system);
+        snprintf(reply, size, "正在前往“%s”（%s）", g_marks[i].name, g_marks[i].system);
         return SCO_OK;
     }
-    snprintf(reply, size, "No saved spot named '%s'", name);
+    snprintf(reply, size, "没有名为“%s”的收藏位置", name);
     return SCO_FAILED;
 }
 
 sco_result SaveBookmark(const sco_arg* args, uint32_t, void*, char* reply, uint32_t size) {
     const char* name = args[0].v.s ? args[0].v.s : "";
     if (strlen(name) > 63) {
-        snprintf(reply, size, "A spot's name is at most 63 characters");
+        snprintf(reply, size, "位置名称最多 63 个字符");
         return SCO_BAD_ARG;
     }
     if (Travel_GetBookmarks(g_marks, kMaxBookmarks) >= kMaxBookmarks) {
-        snprintf(reply, size, "You have %d saved spots; delete one first", kMaxBookmarks);
+        snprintf(reply, size, "已收藏 %d 个位置，请先删除一个", kMaxBookmarks);
         return SCO_FAILED;
     }
     Travel_RequestSaveBookmark(name);
-    snprintf(reply, size, "Saving this spot as '%s'; the status strip says when it's saved", *name ? name : "(the zone's name)");
+    snprintf(reply, size, "正在将当前位置保存为“%s”，完成后会显示在状态栏", *name ? name : "（区域名称）");
     return SCO_OK;
 }
 
 sco_result Scan(const sco_arg*, uint32_t, void*, char* reply, uint32_t size) {
     float progress = 0;
     if (Travel_Scanning(progress)) {
-        snprintf(reply, size, "A scan is already running (%.0f%%)", progress * 100.0f);
+        snprintf(reply, size, "扫描已在进行中（%.0f%%）", progress * 100.0f);
         return SCO_FAILED;
     }
     Travel_RequestScan();
-    snprintf(reply, size, "Scanning everything the game has loaded into locations_found.txt");
+    snprintf(reply, size, "正在扫描游戏已加载的地点并写入 locations_found.txt");
     return SCO_OK;
 }
 
@@ -123,7 +123,7 @@ sco_result QuantumLoad(const sco_api* api, sco_plugin* self) {
     if (r != SCO_OK) return r;   // the host releases what was registered
     g_quantumStore.Open(api, self);   // before the first tick, which loads the saved spots
     // Its page of the menu (and keys), through sco.ui; the menu shell draws it (tabs.h).
-    RegisterBuiltinTab(api, self, "quantum.travel", "Travel", kTabTravel, DrawTravelTab);
+    RegisterBuiltinTab(api, self, "quantum.travel", "旅行", kTabTravel, DrawTravelTab);
     g_ticking = true;
     return SCO_OK;
 }

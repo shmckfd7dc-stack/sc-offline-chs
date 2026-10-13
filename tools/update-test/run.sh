@@ -127,7 +127,7 @@ run_one() {  # <name> <zip> <tag> <sha256>
         # are already swapped and journaled, which is what a crash or power cut mid-swap leaves.
         local killed=no
         for _ in $(seq 1 300); do
-            grep -aq "dinput8.dll is in use" "$dir/data/launcher.log" 2>/dev/null && { killed=yes; break; }
+            grep -aEq "dinput8.dll (is in use|正被占用)" "$dir/data/launcher.log" 2>/dev/null && { killed=yes; break; }
             kill -0 "$run_pid" 2>/dev/null || break; sleep 0.1
         done
         "$WINE_ROOT/inst/bin/wineserver" -k >/dev/null 2>&1

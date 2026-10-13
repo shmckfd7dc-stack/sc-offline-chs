@@ -185,11 +185,11 @@ static const char* LoadLoadout(const char* gamePath) {
     __try {
         const uintptr_t framework = VCall<uintptr_t>(*g_lo.game, g_lo.frameworkSlot);
         const uintptr_t actor = framework ? VCall<uintptr_t>(framework, g_lo.actorSlot) : 0;
-        if (!actor) return "you're not spawned yet";
+        if (!actor) return "你尚未进入游戏世界";
         VCall<void>(actor, g_lo.loadSlot, gamePath, 8u, true);
         return nullptr;
     } __except (EXCEPTION_EXECUTE_HANDLER) {
-        return "fault while loading the loadout";
+        return "加载装备配置时发生异常";
     }
 }
 

@@ -79,18 +79,18 @@ bool GetCVarNow(const char* name, float& value) {
 // per-blob key (Murmur-style fmix32 over the byte offset); these are the names
 // decrypted out of dinput8.dll's label table.
 static const struct { const char* label; const char* tip; const char* cvar; } kS42Settings[] = {
-    { "SQ42 auto targeting",
-      "\"Enables the auto targeting feature for SQ42\" (the game mode can override it).",
+    { "《42 中队》自动锁定",
+      "启用《42 中队》的自动锁定功能（游戏模式可能覆盖此设置）。",
       "i_target_selector.targeting2_enabled" },
-    { "Visor mini-map",
-      "The mini-map on your visor HUD.",
+    { "面罩小地图",
+      "面罩 HUD 上的小地图。",
       "pl_lensdisplay.minimap_enabled" },
-    { "Visor greebles",
-      "The decorative frame pieces on your visor HUD.",
+    { "面罩装饰",
+      "面罩 HUD 上的装饰边框。",
       "pl_lensdisplay.greebles_enabled" },
-    { "SQ42 menus (experimental)",
-      "\"Enable Squadron 42 Frontend\". Switches the pause menu and loading screens to SQ42's, whose data is "
-      "missing; turn it off before traveling or quitting if anything breaks.",
+    { "《42 中队》菜单（实验性）",
+      "将暂停菜单和加载画面切换为《42 中队》样式。相关数据"
+      "尚不完整，如出现异常，请在旅行或退出前关闭此选项。",
       "g_squadron_frontend" },
 };
 constexpr int kS42SettingCount = sizeof(kS42Settings) / sizeof(kS42Settings[0]);

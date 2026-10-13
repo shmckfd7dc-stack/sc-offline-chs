@@ -7,24 +7,38 @@
 #include <cstdio>
 #include <cstring>
 
+// Translate presentation only; category keys are also used for SQ42 filtering.
+static const char* CategoryLabel(const char* key) {
+    static const struct { const char* key; const char* label; } labels[] = {
+        { "outposts", "前哨站" }, { "guards", "守卫" }, { "outpost parts", "前哨站部件" },
+        { "bunkers", "地堡" }, { "habs", "居住舱" }, { "ruins", "废墟" },
+        { "fob", "前线基地" }, { "cover", "掩体" }, { "market", "市场" },
+        { "base", "基地" }, { "furniture", "家具" }, { "storage", "储物" },
+        { "lights", "灯光" }, { "turrets", "炮塔" }, { "deco", "装饰" },
+        { "props", "道具" }, { "displays", "显示设备" }, { "sq42", "42 中队" },
+    };
+    for (const auto& entry : labels) if (strcmp(key, entry.key) == 0) return entry.label;
+    return key;
+}
+
 void DrawBuildTab(void*, void*) {
     static int  build = 0, buildTab = 0;
     static char buildFilter[64] = "";
     const int buildables = Menu_BuildCount();
-    SectionHeading("Objects");
-    if (buildables < 0) { Hint("Loading build objects (you need to be in the universe)..."); return; }
-    if (buildables == 0) { Hint("No build objects found. Check data\\buildables.txt."); return; }
+    SectionHeading("物品");
+    if (buildables < 0) { Hint("正在加载建造物品（请先进入游戏世界）……"); return; }
+    if (buildables == 0) { Hint("未找到建造物品，请检查 data\\buildables.txt。"); return; }
     if (build >= buildables) build = 0;
     if (ImGui::BeginTabBar("##buildTabs", ImGuiTabBarFlags_FittingPolicyScroll)) {
         for (int c = 0; c < Menu_BuildCategoryCount(); ++c) {
             char tab[40];
-            snprintf(tab, sizeof(tab), "%s##cat%d", Menu_BuildCategoryName(c), c);
+            snprintf(tab, sizeof(tab), "%s##cat%d", CategoryLabel(Menu_BuildCategoryName(c)), c);
             if (tab[0] >= 'a' && tab[0] <= 'z') tab[0] -= 'a' - 'A';
             if (ImGui::BeginTabItem(tab)) { buildTab = c; ImGui::EndTabItem(); }
         }
         ImGui::EndTabBar();
     }
-    SearchBox("##buildFilter", "Search all objects", buildFilter, sizeof(buildFilter));
+    SearchBox("##buildFilter", "搜索全部物品", buildFilter, sizeof(buildFilter));
     const bool searching = buildFilter[strspn(buildFilter, " _")] != 0;
     if (ImGui::BeginChild("##buildList", ImVec2(0, 260), ImGuiChildFlags_Borders)) {
         for (int i = 0; i < buildables; ++i) {
@@ -34,7 +48,7 @@ void DrawBuildTab(void*, void*) {
             PrettyBuildName(label, sizeof(label) - 16, name);
             if (searching) {
                 char tagged[160];
-                snprintf(tagged, sizeof(tagged), "%s   (%s)", label, Menu_BuildCategory(i));
+                snprintf(tagged, sizeof(tagged), "%s   (%s)", label, CategoryLabel(Menu_BuildCategory(i)));
                 strcpy_s(label, sizeof(label) - 16, tagged);
             }
             snprintf(label + strlen(label), 16, "##%d", i);
@@ -44,25 +58,25 @@ void DrawBuildTab(void*, void*) {
     }
     ImGui::EndChild();
 
-    SectionHeading("Placing");
+    SectionHeading("放置");
     char picked[128];
     PrettyBuildName(picked, sizeof(picked), Menu_BuildName(build));
-    ImGui::Text("Selected: %s", picked);
+    ImGui::Text("已选择：%s", picked);
     float reach = Menu_BuildReach();
     ImGui::SetNextItemWidth(-1);
-    ImGui::SliderFloat("##reach", &reach, 5.0f, 300.0f, "Reach %.0f m");
-    ImGui::SetItemTooltip("How far ahead objects are placed. They land on the ground where you look, or under the point this far out.");
+    ImGui::SliderFloat("##reach", &reach, 5.0f, 300.0f, "放置距离 %.0f 米");
+    ImGui::SetItemTooltip("设置物品在前方的放置距离。物品会落在视线指向的地面，或指定距离下方的地面上。");
     Menu_SetBuild(build, reach);
     const bool building = Menu_BuildModeActive();
-    if (PrimaryButton(building ? "Stop building (F6)" : "Start building (F6)")) {
+    if (PrimaryButton(building ? "停止建造 (F6)" : "开始建造 (F6)")) {
         Menu_ToggleBuildMode();
         if (!building) MenuClose();
     }
     const float half = Columns(2);
-    if (ImGui::Button("Undo last", ImVec2(half, 0))) Menu_BuildUndo();
+    if (ImGui::Button("撤销上一步", ImVec2(half, 0))) Menu_BuildUndo();
     ImGui::SameLine();
     char clearLabel[48];
-    snprintf(clearLabel, sizeof(clearLabel), "Clear base (%d)###clearBase", Menu_BuildPlacedCount());
+    snprintf(clearLabel, sizeof(clearLabel), "清空基地 (%d)###clearBase", Menu_BuildPlacedCount());
     if (ImGui::Button(clearLabel, ImVec2(half, 0))) Menu_BuildClear();
-    Hint("While building: left click places, R rotates, [ and ] change reach, Backspace undoes, F6 stops.");
+    Hint("建造时：左键放置，R 旋转，[ 和 ] 调整距离，退格键撤销，F6 停止。");
 }

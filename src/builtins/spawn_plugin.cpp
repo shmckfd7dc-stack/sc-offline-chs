@@ -42,19 +42,19 @@ sco_result Ship(const sco_arg* args, uint32_t, void*, char* reply, uint32_t size
     const char* cls = args[0].v.s;
     const double height = args[1].v.f;
     if (!cls || !*cls || strlen(cls) > kMaxClassLen) {
-        snprintf(reply, size, "Name a ship class, at most %u characters", static_cast<unsigned>(kMaxClassLen));
+        snprintf(reply, size, "请输入飞船类型，最多 %u 个字符", static_cast<unsigned>(kMaxClassLen));
         return SCO_BAD_ARG;
     }
     if (!(height >= 0.0 && height <= kMaxHeight)) {
-        snprintf(reply, size, "Height must be 0 to %.0f m", kMaxHeight);
+        snprintf(reply, size, "高度必须在 0 到 %.0f 米之间", kMaxHeight);
         return SCO_BAD_ARG;
     }
     if (!ClassExists(cls)) {
-        snprintf(reply, size, "'%s' isn't a spawnable class on this game build", cls);
+        snprintf(reply, size, "此游戏版本无法生成“%s”类型", cls);
         return SCO_FAILED;
     }
     Menu_RequestSpawnClass(cls, static_cast<float>(height), false, false, false);
-    snprintf(reply, size, "Spawning %s %.0f m above you", cls, height);
+    snprintf(reply, size, "正在生成 %s，位于上方 %.0f 米", cls, height);
     return SCO_OK;
 }
 
@@ -86,7 +86,7 @@ sco_result SpawnLoad(const sco_api* api, sco_plugin* self) {
     if (r == SCO_OK) r = api->subscribe(self, "tick", OnTick, nullptr);
     if (r != SCO_OK) return r;   // the host releases what was registered
     // Its page of the menu (and keys), through sco.ui; the menu shell draws it (tabs.h).
-    RegisterBuiltinTab(api, self, "spawn.vehicles", "Vehicles", kTabVehicles, DrawVehiclesTab);
+    RegisterBuiltinTab(api, self, "spawn.vehicles", "飞船", kTabVehicles, DrawVehiclesTab);
     g_ticking = true;
     return SCO_OK;
 }

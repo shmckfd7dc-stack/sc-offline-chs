@@ -447,7 +447,7 @@ const char* RequestShipFromAtc(uint64_t atcEntity, uint64_t player, const char* 
         g_getATCComp(handle, atcEntity);
         const uintptr_t atc = handle[0] & kPtrMask;
         if (!atc) return "this terminal has no spaceport ATC";
-        if (!player) return "player not spawned";
+        if (!player) return "玩家尚未进入游戏世界";
         alignas(16) uint8_t location[32] = {};
         void* archetype = nullptr;
         void* padFilter = nullptr;

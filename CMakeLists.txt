@@ -71,7 +71,7 @@ add_subdirectory(external/sco-core EXCLUDE_FROM_ALL)
 # Settings every target had: CharacterSet Unicode, ConformanceMode (/permissive-), SDLCheck (/sdl).
 # NDEBUG in Release comes from CMake's default Release flags (/O2 /Ob2 /DNDEBUG).
 set(SCO_COMMON_DEFINES UNICODE _UNICODE _CONSOLE)
-set(SCO_COMMON_OPTIONS /permissive- /sdl)
+set(SCO_COMMON_OPTIONS /permissive- /sdl /utf-8)
 
 # --- dinput8.dll and the ImGui it draws with --------------------------------------------------
 # The .vcxproj compiled ImGui inside the DLL project, so it gets the DLL's settings except warnings.

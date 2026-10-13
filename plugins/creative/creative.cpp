@@ -22,43 +22,43 @@ public:
         using namespace sco::sdk;
         const sco_result open = cr_.Open(*this);
         if (open != SCO_OK) {
-            Error("game.creative isn't available (result %d)", static_cast<int>(open));
+            Error("game.creative 不可用（返回值 %d）", static_cast<int>(open));
             return open;
         }
-        sco_result r = Toggle("creative.god", "God mode", "No damage to you", "game.creative.god_mode",
+        sco_result r = Toggle("creative.god", "无敌模式", "玩家不会受到伤害", "game.creative.god_mode",
                               &sco::sdk::game::Creative::SetGodMode);
         if (r == SCO_OK)
-            r = Toggle("creative.noclip", "Noclip", "Fly through everything (speed: creative.noclip_speed)", "game.creative.fly",
+            r = Toggle("creative.noclip", "穿墙模式", "可穿过所有物体飞行（速度：creative.noclip_speed）", "game.creative.fly",
                        &sco::sdk::game::Creative::SetFlyMode);
         if (r == SCO_OK)
-            r = Toggle("creative.ammo", "Infinite ammo", "The weapons you carry never run out", "game.creative.ammo",
+            r = Toggle("creative.ammo", "无限弹药", "携带的武器不会耗尽弹药", "game.creative.ammo",
                        &sco::sdk::game::Creative::SetInfiniteAmmo);
         if (r == SCO_OK)
-            r = Toggle("creative.ship_ammo", "Infinite ship ammo", "Every weapon on the ship you're aboard never runs out",
+            r = Toggle("creative.ship_ammo", "飞船无限弹药", "所在飞船的所有武器都不会耗尽弹药",
                        "game.creative.ship_ammo", &sco::sdk::game::Creative::SetInfiniteShipAmmo);
         if (r == SCO_OK)
             r = CommandBuilder(*this, "creative.noclip_speed")
-                    .Title("Noclip speed")
-                    .Help("The fly speed in metres per second (1 to 10000); the game's own speed returns when this plugin unloads")
+                    .Title("穿墙速度")
+                    .Help("飞行速度，单位米/秒（1 到 10000）；卸载此插件后恢复游戏原有速度")
                     .Capability("game.creative.fly")
-                    .Arg<double>("speed", "Metres per second")
+                    .Arg<double>("speed", "米/秒")
                     .Handle([this](const Args& args, Reply& reply) {
                         const double speed = args.Float(0);
                         const sco_result s = cr_.SetFlySpeed(static_cast<float>(speed));
-                        if (s != SCO_OK) return Failed(reply, "Noclip speed", s);
-                        reply.Printf("Noclip speed %.0f", speed);
+                        if (s != SCO_OK) return Failed(reply, "穿墙速度", s);
+                        reply.Printf("穿墙速度 %.0f", speed);
                         return SCO_OK;
                     })
                     .Register();
         if (r == SCO_OK)
             r = CommandBuilder(*this, "creative.status")
-                    .Title("Creative status")
-                    .Help("Which of the toggles are on")
+                    .Title("创造模式状态")
+                    .Help("查看各功能的开关状态")
                     .Handle([this](const Args&, Reply& reply) {
                         uint32_t flags = 0;
                         const sco_result s = cr_.State(flags);
-                        if (s != SCO_OK) return Failed(reply, "Creative status", s);
-                        reply.Printf("god %s, noclip %s, ammo %s, ship ammo %s", On(flags, SC_CREATIVE_GOD_MODE),
+                        if (s != SCO_OK) return Failed(reply, "创造模式状态", s);
+                        reply.Printf("无敌 %s，穿墙 %s，无限弹药 %s，飞船无限弹药 %s", On(flags, SC_CREATIVE_GOD_MODE),
                                      On(flags, SC_CREATIVE_FLY), On(flags, SC_CREATIVE_INFINITE_AMMO),
                                      On(flags, SC_CREATIVE_INFINITE_SHIP_AMMO));
                         return SCO_OK;
@@ -70,13 +70,13 @@ public:
 private:
     using SetFn = sco_result (sco::sdk::game::Creative::*)(bool) const noexcept;
 
-    static const char* On(uint32_t flags, uint32_t bit) { return (flags & bit) ? "on" : "off"; }
+    static const char* On(uint32_t flags, uint32_t bit) { return (flags & bit) ? "开启" : "关闭"; }
 
     // The reply says why: the game pack's own reason, when it left one.
     sco_result Failed(sco::sdk::Reply& reply, const char* what, sco_result r) const {
         char why[256] = {};
         cr_.LastError(why);
-        reply.Printf("%s failed: %s", what, why[0] ? why : "see mod.log");
+        reply.Printf("%s 失败：%s", what, why[0] ? why : "详见 mod.log");
         return r;
     }
 
@@ -87,12 +87,12 @@ private:
             .Title(title)
             .Help(help)
             .Capability(capability)
-            .Arg<bool>("on", "true = on, false = off")
+            .Arg<bool>("on", "true = 开启，false = 关闭")
             .Handle([this, set, label](const Args& args, Reply& reply) {
                 const bool on = args.Bool(0);
                 const sco_result s = (cr_.*set)(on);
-                if (s != SCO_OK) return Failed(reply, (label + (on ? " on" : " off")).c_str(), s);
-                reply.Printf("%s %s", label.c_str(), on ? "on" : "off");
+                if (s != SCO_OK) return Failed(reply, (label + (on ? " 开启" : " 关闭")).c_str(), s);
+                reply.Printf("%s %s", label.c_str(), on ? "开启" : "关闭");
                 return SCO_OK;
             })
             .Register();

@@ -598,7 +598,7 @@ static void Enter() {
     if (g_freeCamOn && g_buildCount < 0) LoadBuildList();
     if (!g_freeCamOn || g_buildCount <= 0) {
         Log("[build] build mode isn't available yet (%s)", !g_freeCamOn ? "no free camera on this game build"
-                                                     : g_buildCount < 0 ? "you're not spawned yet"
+                                                     : g_buildCount < 0 ? "你尚未进入游戏世界"
                                                                         : "nothing to place from buildables.txt");
         return;
     }

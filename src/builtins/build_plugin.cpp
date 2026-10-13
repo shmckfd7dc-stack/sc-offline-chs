@@ -30,28 +30,28 @@ constexpr double kMaxAhead = 100.0;   // metres in front of you
 sco_result Toggle(const sco_arg*, uint32_t, void*, char* reply, uint32_t size) {
     const bool active = Menu_BuildModeActive();
     Menu_ToggleBuildMode();
-    snprintf(reply, size, "Turning build mode %s", active ? "off" : "on");
+    snprintf(reply, size, "正在切换建造模式：%s", active ? "关闭" : "开启");
     return SCO_OK;
 }
 
 sco_result Undo(const sco_arg*, uint32_t, void*, char* reply, uint32_t size) {
     if (Menu_BuildPlacedCount() == 0) {
-        snprintf(reply, size, "Nothing placed to undo");
+        snprintf(reply, size, "没有可撤销的已放置物品");
         return SCO_FAILED;
     }
     Menu_BuildUndo();
-    snprintf(reply, size, "Removing the last thing you placed");
+    snprintf(reply, size, "正在移除上次放置的物品");
     return SCO_OK;
 }
 
 sco_result Clear(const sco_arg*, uint32_t, void*, char* reply, uint32_t size) {
     const int placed = Menu_BuildPlacedCount();
     if (placed == 0) {
-        snprintf(reply, size, "Nothing placed to clear");
+        snprintf(reply, size, "没有可清空的已放置物品");
         return SCO_FAILED;
     }
     Menu_BuildClear();
-    snprintf(reply, size, "Clearing the base (%d objects)", placed);
+    snprintf(reply, size, "正在清空基地（%d 个物品）", placed);
     return SCO_OK;
 }
 
@@ -59,26 +59,26 @@ sco_result Place(const sco_arg* args, uint32_t, void*, char* reply, uint32_t siz
     const char* thing = args[0].v.s;
     const double ahead = args[1].v.f;
     if (!thing || !*thing) {
-        snprintf(reply, size, "Name a buildable from buildables.txt");
+        snprintf(reply, size, "请输入 buildables.txt 中的物品名称");
         return SCO_BAD_ARG;
     }
     if (!(ahead >= 0.0 && ahead <= kMaxAhead)) {
-        snprintf(reply, size, "Ahead must be 0 (at your feet) to %.0f m", kMaxAhead);
+        snprintf(reply, size, "前方距离必须在 0（脚下）到 %.0f 米之间", kMaxAhead);
         return SCO_BAD_ARG;
     }
     const int n = Menu_BuildCount();   // asking starts the read of buildables.txt
     if (n < 0) {
-        snprintf(reply, size, "The build list loads once you're in the universe; try again in a moment");
+        snprintf(reply, size, "进入游戏世界后会加载建造列表，请稍后重试");
         return SCO_FAILED;
     }
     const int i = FindBuiltinName(n, Menu_BuildName, thing);
     if (i < 0) {
-        snprintf(reply, size, "'%s' isn't in the build list (buildables.txt)", thing);
+        snprintf(reply, size, "建造列表（buildables.txt）中没有“%s”", thing);
         return SCO_FAILED;
     }
     Menu_RequestPlace(i, ahead > 0.0, static_cast<float>(ahead));
-    if (ahead > 0.0) snprintf(reply, size, "Placing %s %.0f m in front of you", Menu_BuildName(i), ahead);
-    else             snprintf(reply, size, "Placing %s at your feet", Menu_BuildName(i));
+    if (ahead > 0.0) snprintf(reply, size, "正在放置 %s，位于前方 %.0f 米", Menu_BuildName(i), ahead);
+    else             snprintf(reply, size, "正在脚下放置 %s", Menu_BuildName(i));
     return SCO_OK;
 }
 
@@ -123,7 +123,7 @@ sco_result BuildLoad(const sco_api* api, sco_plugin* self) {
     else
         Log("[build] game.world isn't available: the ground ray and the camera come from sco-core's build rows");
     // Its page of the menu (and keys), through sco.ui; the menu shell draws it (tabs.h).
-    RegisterBuiltinTab(api, self, "build.build", "Build", kTabBuild, DrawBuildTab);
+    RegisterBuiltinTab(api, self, "build.build", "建造", kTabBuild, DrawBuildTab);
     BindBuiltinHotkey(api, self, "f6", "build.toggle");
     g_ticking = true;
     return SCO_OK;

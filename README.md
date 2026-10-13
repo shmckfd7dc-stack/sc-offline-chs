@@ -1,3 +1,5 @@
+**[简体中文界面与编译说明](README.zh-CN.md)**
+
 <div align="center">
 
 <a href="https://discord.gg/NJKeVfYCCC"><img src="https://img.shields.io/badge/JOIN%20THE%20DISCORD-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Join the sc-offline Discord" height="64"></a>

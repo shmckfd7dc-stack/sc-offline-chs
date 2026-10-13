@@ -638,7 +638,7 @@ sco_result TlLoad(const sco_api* api, sco_plugin* self) {
         "The link, the match and your Titan in one line", CmdStatus);
     if (r == SCO_OK) r = api->subscribe(self, "tick", OnTick, nullptr);
     if (r != SCO_OK) return r;   // the host releases what was registered
-    RegisterBuiltinTab(api, self, "titanlink.titanfall", "Titanfall", kTabTitanLink, DrawTitanLinkTab);
+    RegisterBuiltinTab(api, self, "titanlink.titanfall", "泰坦陨落", kTabTitanLink, DrawTitanLinkTab);
     BindBuiltinHotkey(api, self, "f9", "titanlink.pilot");
     return SCO_OK;
 }

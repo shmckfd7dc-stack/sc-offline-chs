@@ -27,11 +27,11 @@ constexpr const char* kCap = "loadout";
 sco_result Equip(const sco_arg* args, uint32_t, void*, char* reply, uint32_t size) {
     const char* items = args[0].v.s;
     if (!items || !*items || strlen(items) > 1023) {
-        snprintf(reply, size, "Name the items from items.txt, separated by spaces or commas");
+        snprintf(reply, size, "请输入 items.txt 中的物品名称，用空格或逗号分隔");
         return SCO_BAD_ARG;
     }
     if (Menu_GearCount(0) < 0) {   // asking starts the read of items.txt
-        snprintf(reply, size, "The gear list loads once you're in the universe; try again in a moment");
+        snprintf(reply, size, "进入游戏世界后会加载装备列表，请稍后重试");
         return SCO_FAILED;
     }
     int picks[Gear_SlotCount];
@@ -48,43 +48,43 @@ sco_result Equip(const sco_arg* args, uint32_t, void*, char* reply, uint32_t siz
                 if (_stricmp(Menu_GearName(s, i), item) == 0) { slot = s; index = i; break; }
         }
         if (index < 0) {
-            snprintf(reply, size, "'%s' isn't in the gear list (items.txt)", item);
+            snprintf(reply, size, "装备列表（items.txt）中没有“%s”", item);
             return SCO_FAILED;
         }
         if (picks[slot] >= 0) {
-            snprintf(reply, size, "'%s' and '%s' go in the same slot; name one", Menu_GearName(slot, picks[slot]), item);
+            snprintf(reply, size, "“%s”和“%s”占用同一装备槽，请只选择一个", Menu_GearName(slot, picks[slot]), item);
             return SCO_BAD_ARG;
         }
         picks[slot] = index;
         ++count;
     }
     if (!count) {
-        snprintf(reply, size, "Name the items from items.txt, separated by spaces or commas");
+        snprintf(reply, size, "请输入 items.txt 中的物品名称，用空格或逗号分隔");
         return SCO_BAD_ARG;
     }
     Menu_RequestEquip(picks);
-    snprintf(reply, size, "Equipping %d item%s; the rest of the slots are empty, as in the gear menu", count, count == 1 ? "" : "s");
+    snprintf(reply, size, "正在穿戴 %d 件装备%s，其余槽位留空，与装备菜单一致", count, "");
     return SCO_OK;
 }
 
 sco_result Wear(const sco_arg* args, uint32_t, void*, char* reply, uint32_t size) {
     const char* outfit = args[0].v.s;
     if (!outfit || !*outfit) {
-        snprintf(reply, size, "Name an outfit from outfits.txt");
+        snprintf(reply, size, "请输入 outfits.txt 中的套装名称");
         return SCO_BAD_ARG;
     }
     const int n = Menu_OutfitCount();   // asking starts the read of outfits.txt
     if (n < 0) {
-        snprintf(reply, size, "The outfit list loads once you're in the universe; try again in a moment");
+        snprintf(reply, size, "进入游戏世界后会加载套装列表，请稍后重试");
         return SCO_FAILED;
     }
     const int i = FindBuiltinName(n, Menu_OutfitName, outfit);
     if (i < 0) {
-        snprintf(reply, size, "'%s' isn't in the outfit list (outfits.txt)", outfit);
+        snprintf(reply, size, "套装列表（outfits.txt）中没有“%s”", outfit);
         return SCO_FAILED;
     }
     Menu_RequestWearOutfit(i);
-    snprintf(reply, size, "Wearing %s", Menu_OutfitName(i));
+    snprintf(reply, size, "正在穿戴 %s", Menu_OutfitName(i));
     return SCO_OK;
 }
 
@@ -107,7 +107,7 @@ sco_result LoadoutLoad(const sco_api* api, sco_plugin* self) {
     if (r != SCO_OK) return r;   // the host releases what was registered
     // Its page of the menu (and keys), through sco.ui; the menu shell draws it (tabs.h).
     RegisterPlayerTab(api, self);
-    RegisterBuiltinTab(api, self, "loadout.sq42", "Squadron 42", kTabSq42, DrawSq42Tab);
+    RegisterBuiltinTab(api, self, "loadout.sq42", "42 中队", kTabSq42, DrawSq42Tab);
     g_ticking = true;
     return SCO_OK;
 }
